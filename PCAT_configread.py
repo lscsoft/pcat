@@ -407,18 +407,19 @@ def main():
     
     if not opts.list:
         if (start_time < 1091836816):
-            FLAG_1 = "L1:DMT-XARM_LOCK"
-            FLAG_2 = "L1:DMT-YARM_LOCK"
-            FLAG_3 = "L1:DMT-PRC_LOCK"
+            FLAG_1 = "L1:DMT-XARM_LOCK:1"
+            FLAG_2 = "L1:DMT-YARM_LOCK:1"
+            FLAG_3 = "L1:DMT-PRC_LOCK:1"
             # Get locked segments for each the three above flags:
             print "Retrieving locked segments..."
-            locked = DataQualityDict.query([FLAG_1, FLAG_1, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
+            locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
+#            print(locked.keys())
             locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
         else:
-            FLAG = "L1:DMT-DC_READOUT_LOCKED"
+            FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
             
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
-            
+#        exit()
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
