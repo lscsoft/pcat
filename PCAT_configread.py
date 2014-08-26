@@ -35,7 +35,7 @@ DPI = 80
 IMAGE_HEIGHT = 2*DPI
 
 import optparse
-from pylal.dq import dqSegmentUtils
+from gwpy.segments import (DataQualityFlag, DataQualityDict)
 
 def parse_commandline():
     """
@@ -406,19 +406,19 @@ def main():
         del tmp
     
     if not opts.list:
-        FLAG_1 = "L1:DMT-XARM_LOCK"
-        FLAG_2 = "L1:DMT-YARM_LOCK"
-        FLAG_3 = "L1:DMT-PRC_LOCK"
-        # Get locked segments for each the three above flags:
-        print "Retrieving locked segments..."
-        locked_1 = dqSegmentUtils.grab_segments(start_time, end_time, FLAG_1, segment_url="https://segdb-er.ligo.caltech.edu")
-        locked_2 = dqSegmentUtils.grab_segments(start_time, end_time, FLAG_2, segment_url="https://segdb-er.ligo.caltech.edu")
-        locked_3 = dqSegmentUtils.grab_segments(start_time, end_time, FLAG_3, segment_url="https://segdb-er.ligo.caltech.edu")
-        
-        # Get the intersection
-        locked_times = locked_1 & locked_2 & locked_3
-        
-        
+        if (start_time < 1091836816):
+            FLAG_1 = "L1:DMT-XARM_LOCK"
+            FLAG_2 = "L1:DMT-YARM_LOCK"
+            FLAG_3 = "L1:DMT-PRC_LOCK"
+            # Get locked segments for each the three above flags:
+            print "Retrieving locked segments..."
+            locked = DataQualityDict.query([FLAG_1, FLAG_1, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
+            locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
+        else:
+            FLAG = "L1:DMT-DC_READOUT_LOCKED"
+            
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
+            
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
