@@ -413,19 +413,17 @@ def main():
             # Get locked segments for each the three above flags:
             print "Retrieving locked segments..."
             locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
-#            print(locked.keys())
             locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
         else:
             FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
             
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
-#        exit()
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
         if (len(locked_times) > 0):
             for segment in locked_times:
-                f.write(str(segment[0])+"\t"+str(segment[1])+"\n")
+                f.write(str(int(segment[0]))+"\t"+str(int(segment[1]))+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))

@@ -249,7 +249,7 @@ def gaussian_mixture(matrix, upper_bound, SILENT=False):
 	# Create progress bar
 	if not SILENT:
 		progress = progressBar(minValue = 0, maxValue = 4*upper_bound-1, totalWidth = 40 )
-		progress.__call__(0)
+		progress(0)
 	
 	j = 0
 	lowest_bic = np.infty
@@ -265,10 +265,10 @@ def gaussian_mixture(matrix, upper_bound, SILENT=False):
 				lowest_bic = bic[-1]
 				best_gmm = gmm
 			if not SILENT:
-				progress.__call__(j)
+				progress(j)
 			j += 1
 		if not SILENT:
-			progress.__call__(j)
+			progress(j)
 			j += 1
 		
 	best_gmm.fit(matrix)
@@ -851,7 +851,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 	if not SILENT:
 		if (spikes_number > 1):
 			progress = progressBar(minValue = 0, maxValue = spikes_number-1, totalWidth = 40 )
-			progress.__call__(0)
+			progress(0)
 	
 	if f_sampl:
 		x_axis = np.array([ i/f_sampl for i in range( 0, waveform_length ) ])
@@ -912,7 +912,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 		
 		if not SILENT:
 			if ( spikes_number > 1 ):
-				progress.__call__(index+1)
+				progress(index+1)
 	del labels_list
 
 
@@ -957,7 +957,7 @@ def plot_psds(database, PCA_info, components_number, labels, f_sampl, ANALYSIS="
 	if not SILENT:
 		if ( psd_number > 1):
 			progress = progressBar(minValue = 0, maxValue = psd_number-1, totalWidth = 40 )
-			progress.__call__(0)
+			progress(0)
 	
 	# Initialize axes
 	if ( "bands" in ANALYSIS ):
@@ -998,7 +998,7 @@ def plot_psds(database, PCA_info, components_number, labels, f_sampl, ANALYSIS="
 		del fig
 		if not SILENT:
 			if ( psd_number > 1 ):
-				progress.__call__(index)
+				progress(index)
 	del labels_list
 
 
@@ -1046,7 +1046,7 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 			sys.exit()
 	
 	for index, element in enumerate(colored_clusters_list):
-		tmp = np.matrix(element)
+		tmp = np.array(element)
 		ax.plot( tmp[:,x-1] , tmp[:,y-1], markers_and_colors[index], label = str(index), markersize = 5 )
 		plotlabels.append( str(index+1) )
 	

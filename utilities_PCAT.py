@@ -115,7 +115,7 @@ class progressBar:
 		for i in range(0,N):
 			for j in range(0,N/100):
 				j = i**2
-			bar.__call__(i+1)
+			bar(i+1)
 		print "\n"
 		'''
 	"""

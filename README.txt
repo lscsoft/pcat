@@ -20,9 +20,11 @@ PCAT (Principal Component Analysis for Transients) is a suite of Python
 utilities built to identify, isolate and characterize and classify 
 transients found in LIGO/Advanced LIGO subsystems.
 
-PCAT is built on standard Python libraries, such as numpy, scipy, matplotlib 
-and others. The scikit-learn module (http://scikit-learn.org/stable/, 
-http://pypi.python.org/pypi/scikit-learn/) is also required.
+PCAT is built on standard Python libraries, such as numpy, scipy, matplotlib.
+The scikit-learn module (http://scikit-learn.org/stable/, 
+http://pypi.python.org/pypi/scikit-learn/) is also required. gwpy
+(https://github.com/gwpy) is  also required when running PCAT_configread to
+retrieve locked segments. pylal is required for data retrieval (download_frames.py)
 
 *******************************************************************************
 ***************************      Installation:      ***************************
@@ -36,14 +38,16 @@ To add the PCAT folder to your path simply add the following lines in your
 
     EXPORT PATH=$PATH:/path/to/PCAT/
     EXPORT PYTHONPATH=$PYTHONPATH:/path/to/PCAT/
-	eval `/ligotools/bin/use_ligotools`
-	
-Install scikit-learn:
+    eval `/ligotools/bin/use_ligotools`
+    
+Either source scikit-learn from an existing location:
+
+or install scikit-learn from scratch:
     http://scikit-learn.org/stable/, 
     http://pypi.python.org/pypi/scikit-learn/
 
-pylal also has to be importable by python. Make sure pylal is available before
-running.
+gwpy also has to be sourced:
+    source ~detchar/opt/gwpysoft/etc/gwpy-user-env.sh 
 *******************************************************************************
 ***************************        Contents:        ***************************
 *******************************************************************************
@@ -52,8 +56,8 @@ running.
     - PCAT.py
     - PCAT_configread.py  (batch submit script + summary pages)
   If running time-domain analysis, the given time interval is scanned for 
-  transients, which then are clustered in the principal component space, 
-  dividing them according to type.
+  transients, on which PCA is performed, redusing these to a set of Principal
+  Component scores, are then clustered.
   If running frequency-domain analysis, the given time interval is split into
   subsegments of which PSDs are computed. These are again clustered in the
   principal components space and divided by type.
@@ -67,17 +71,19 @@ running.
    - Breakdown of observations by type;
    - Representation of the average observation of each type in time/frequency
      domain (depending on the type of analysis being performed);
-   - Database (pickled python list) containing all the observations of the run;
+   - Database (pickled python list) containing all the observations of the run
+     plus useful metadata, such as GPS peak, SNR and peak frequency for time
+     domain and GPS start/end for the segment in frequency domain analysis;
    - List of the segments analyzed and total analyzed time.
   Also, if doing a time-domain analysis, results include:
-   - Time series of all of the identified transients;
+   - Time series of identified transients, showing both raw time series
+     and principal component-reconstructed waveforms;
    - Spectrograms for the representative transients;
    - Glitchgram showing the time distribution of the transients.
   If doing frequency domain analysis, results include:
-   - Plots of each segment's PSD.
+   - PSDs plots and principal component-reconstructed PSDs.
   
-  Extra information (one should not need to check these, but they might be 
-  useful):
+  Extra:
    - Plots of the first few (by default 10) principal components;
    - Matrix of the Principal Components, as a binary file (use with
      numpy.load());
@@ -131,7 +137,7 @@ To show usage: either run the program with no arguments or  '-h' or '--help'.
 To quickly get started after installation, scroll down to the PCAT.py examples.
 PCAT.py.
 
-The PCAT pipeline is as follows:
+The PCAT pipeline:
     1) Retrieve and condition Data: 
         Retrieve time series from frame files using lalframe, then
         prepare data for analysis rurnning through the conditioning
@@ -157,9 +163,9 @@ The PCAT pipeline is as follows:
        few lines of code (once one has defined the clustering algorithm )
        defined. See GMM.py
     
-    6) Plot scatterplots (with image maps), time series:
-        scatterplot(...), plot_time_series(...), plot_psds(...)
-        from GMM.py
+    6) Plot clickable scatterplots, clickable glitchgram, time series or PSDs:
+        scatterplot(...), plot_glitchgram(), plot_time_series(...), plot_psds(...)
+        from GMM.py and utilities_PCAT.py
     
     7) Print URL to analysis results.
         Output file (in the output directory) is a ".list" binary file.
@@ -170,14 +176,15 @@ The PCAT pipeline is as follows:
 PCAT.py's output is an URL with scatterplots and analysis for the given times.
 
 
-    - PCAT.py               Wraps the PCAT pipeline in a single program.
-                            See examples in the quick start guide below. 
-    - PCAT_configread.py    Wraps the above, this takes as arguments a list
-                            of GPS times or two time intervals plus configuration
-                            files (see included .config files for examples)
-                            and and runs the PCAT pipeline on the given channels.
-                            Generating a summary page when finished.    
-    - download_frames.py    Retrieves frame files using the pylal library
+    - PCAT.py               Full pipeline for a single channel.
+    - PCAT_configread.py    Wraps the above and runs on a list of channels,
+                            generating html summary pages.
+                            This can take as argument either start and end GPS times,
+                            resulting in the analysis of the locked times between
+                            start and end times or a list of GPS times to be analyzed.
+                            Configuration files are also needed (see .config files
+                            for examples).
+    - download_frames.py    Retrieves frame files using gwpy library
                             Arguments are start and end time in GPS time, 
                             channel name, IFO and frame type.
                             Data is downloaded and split into

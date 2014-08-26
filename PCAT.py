@@ -634,14 +634,14 @@ def __print_parameters__():
 	dividend = 1.0
 	if ( total > 60.0 ):
 		dividend *= 60.0
-		units = "%.2f minutes" 
+		units = "minutes" 
 		if ( total/dividend > 60.0 ):
 			dividend *= 60.0
-			units = "%.2f hours" 
+			units = "hours" 
 			if ( total/dividend > 24.0 ):
 				dividend *= 24.0
-				units = "%.2f days"
-	print "\t\t Total analyzed time:\t\t" + str(units) % (total/dividend)
+				units = "days"
+	print "\t\t Total analyzed time:\t\t{0:.2f} {1}".format(total/dividend, units)
 	print "\t\t Channel name:\t\t\t", channel
 	print "\t\t IFO:\t\t\t\t", IFO
 	print "\t\t Data Type:\t\t\t", frame_type
@@ -1078,7 +1078,7 @@ def pipeline(args):
 				global progress, progress_index
 				progress_index += 1
 				print "\r\t", sprog.next(), "\r",
-				progress.__call__(progress_index)
+				progress(progress_index)
 			return found_spikes
 	elif ( "frequency" in ANALYSIS):
 		# In this case the workfunction gets the timeseries, computes the PSD,
@@ -1143,7 +1143,7 @@ def pipeline(args):
 				global progress, progress_index
 				progress_index += 1
 				print "\r\t", sprog.next(), "\r",
-				progress.__call__(progress_index)
+				progress(progress_index)
 			return out_file
 		
 	
@@ -1200,7 +1200,7 @@ def pipeline(args):
 	
 	print "\tDownloading and processing..."
 	if not SILENT:
-		progress.__call__(0)
+		progress(0)
 		print "\t", sprog.next(), "\r",
 		sys.stdout.flush()
 		print " "*(frame_width-3), "\r",
@@ -1245,7 +1245,7 @@ def pipeline(args):
 		
 	# Complete progress bar
 	if not SILENT:
-		progress.__call__(bar_len)
+		progress(bar_len)
 		print "\t[ O ]"
 	
 	if ("time" in ANALYSIS):
@@ -1395,7 +1395,7 @@ def pipeline(args):
 						axs.append( fig.add_subplot(triangle_components, triangle_components, n))
 					plot_legend = []
 					for index, element in enumerate(colored_clusters):
-						tmp = np.matrix(element)
+						tmp = np.array(element)
 						axs[-1].plot( tmp[:,x-1] , tmp[:,y-1], markers_and_colors[index], label = str(index), markersize = 5 )
 						plot_legend.append( str(index+1) )
 					axs[-1].label_outer()
@@ -1489,11 +1489,11 @@ def pipeline(args):
 	
 	# Save information about the analyzed interval (intervals and total time)
 	f = open("Analyzed_interval.txt", "w")
-	f.write("#Start\tEnd\tDuration [s]\n")
+	f.write("#Start\t\tEnd\tDuration [s]\n")
 	for interval in times:
 		start_tmp, end_tmp = interval[0], interval[1]
 		f.write("{0}\t{1}\t{2}\n".format(start_tmp, end_tmp, end-start) )
-	f.write("Total analyzed time:\t {0:.1f}".format(total/dividend) + str(units))
+	f.write("Total analyzed time:\t{0:.1f} {1}".format(total/dividend, units))
 	f.close()
 	
 	# Plot a glitchgram for the given time interval if

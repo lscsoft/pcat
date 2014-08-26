@@ -659,7 +659,7 @@ def main():
 	print "Processing..."
 	if PROGRESS:
 		bar = progressBar( minValue = 0, maxValue = len(args)-1, totalWidth = 60 )
-		bar.__call__(0)
+		bar(0)
 	
 	
 	# Data processing
@@ -683,7 +683,7 @@ def main():
 		
 		# Update the progress bar
 		if PROGRESS:
-			bar.__call__(index)
+			bar(index)
 			
 		
 	print "\nDone!"
