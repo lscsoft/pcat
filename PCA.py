@@ -210,7 +210,7 @@ def eigensystem(matrix):
 	
 	eigenvalues, eigenvectors = np.linalg.eigh( matrix )
 	# Sort eigenvalues by order of decreasing absolute value
-	idx = eigenvalues.argsort()
+	idx = np.abs(eigenvalues).argsort()
 	eigenvalues = eigenvalues[idx[::-1]]
 	eigenvectors = eigenvectors[:,idx[::-1]]
 	index = 0
@@ -232,14 +232,16 @@ def eigensystem(matrix):
 	return eigenvalues, eigenvectors
 
 
-def PCA(matrix, components_number=50):
+def PCA(matrix, components_number=50, variance=0):
 	'''
-	This function performs PCA on the input matrix
+	This function performs PCA on the input matrix, if variance
+	is supplied (defaults to 0), then the explained variance
+	plot shows the number of components accounting for the given
+	percent (between 0 and 1)
 	
 	A couple plots are also generated:
 		- explained variance in function of the components number
 		- Latent roots (eigenvalues) values in function of their index
-    
 	
 	Returns:
 	(score_matrix, principal_components, column_means, std_dev, eigenvalues)
@@ -253,8 +255,13 @@ def PCA(matrix, components_number=50):
 	
 	covariance_matrix = np.cov( matrix.transpose() )
 	eigenvalues, principal_components = eigensystem( covariance_matrix )
-    
-    
+	
+	if (variance !=0) and (variance <= 1):
+		explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
+		components_number = np.argmax(np.where(explained_variance<variance, explained_variance,0))
+	elif (variance <= 0) or (variance >1):
+		assert False, "variance has to be in the ]0,1] interval"
+		
 	if ( components_number != 0 ):	
 		fig = plt.figure()
 		ax = fig.add_subplot(111)
@@ -265,8 +272,8 @@ def PCA(matrix, components_number=50):
 			components_number = 50
 			ax.set_xticks(range(0, 51, 5))
 		ax.grid( True, linestyle = '--' )
-		total = np.sum(eigenvalues)
-		variances = np.cumsum(eigenvalues[:components_number])
+		total = np.sum(np.abs(eigenvalues))
+		variances = np.cumsum(np.abs(eigenvalues[:components_number]))
 		# Plot twice, once for the line, once for the markers
 		ax.plot( range(1, components_number+1), np.divide( variances, float(total) ), "b-" )
 		ax.plot( range(1, components_number+1), np.divide( variances, float(total) ), "bo", markersize=3)
@@ -277,8 +284,8 @@ def PCA(matrix, components_number=50):
 		fig = plt.figure()
 		ax = fig.add_subplot(111)
 		#ax.hist(np.abs(eigenvalues), np.sqrt(len(eigenvalues)), log=True)
-		ax.plot(range(components_number), eigenvalues[:components_number])
-		ax.plot(range(components_number), eigenvalues[:components_number], "bo", markersize=3)
+		ax.plot(range(components_number), np.abs(eigenvalues[:components_number]))
+		ax.plot(range(components_number), np.abs(eigenvalues[:components_number]), "bo", markersize=3)
 		ax.plot(range(components_number), np.ones(components_number))
 		ax.grid(which="both")
 		ax.set_title("Latent Roots - {0} above threshold (1.0)".format((eigenvalues>1.0).tolist().count(True)))

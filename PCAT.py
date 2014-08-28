@@ -108,8 +108,6 @@ psd_overlap = 0.5
 ##############################
 # GMM default parameters
 ################################
-# Decide the number of components on which GMM clustering is performed
-components_number = 15
 # Maximum number of clusters found by GMM
 max_clusters = 10
 
@@ -274,6 +272,12 @@ def __usage__():
 	print "\tto reconstruct the glitches when plotting the time series"
 	print "\tin the time-domain analysis when --reconstruct is used."
 	print "\tThis might have to be tweaked for optimal results."
+	print "\t --variance explained_variance"
+	print "\tSimilar to the above, fixes the percentage of variance to include"
+	print "\tin the analysis, hence fixing the number of principal components used."
+	print "\tthis has to be a float between 0 and 1 (100%)."
+	print "\tWhen --components is set to 0, explained variance is set to the default"
+	print "\tvalue of 75%."
 	
 	print "   -m number, --maxclusters number"
 	print "\tSpecifies the maximum number"
@@ -297,7 +301,7 @@ def __usage__():
 	
 	print "   --reconstruct"
 	print "\tIf set, then glitches' time series are reconstructed using components_number "
-	print "\tprincipal components (set with --components, default is 40)."
+	print "\tprincipal components (set with --components or --variance)."
 	print "\tOnly using the first few principal components will reduce noise in the time series"
 	print "\tand make the 'true' shape of the glitch more clear."
 	
@@ -330,9 +334,13 @@ def __check_options_and_args__(argv):
 	
 	global variables, channel, IFO, sampling
 	global frame_type, variables, normalization
-	global low, high, output_name, threshold, time_resolution
+	global low, high, output_name, threshold, time_resolution, components_number
 	
 	global ANALYSIS, ANALYSIS_FREQUENCY, CLEAN, RECONSTRUCT, NOPLOT, SILENT
+	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
+	
+	components_number = 40
+	AUTOCHOOSE_COMPONENTS = True
 	SILENT = False
 	NOPLOT = False
 	CLEAN = False
@@ -358,7 +366,8 @@ def __check_options_and_args__(argv):
 		 												'high=', 'low=', 'list=', 'components=', 'time', 'frequency',\
 														'filter', 'maxclusters=', 'whiten', 'size=', 'nohighpass', 'resample=',\
 														'highpasscutoff=', 'energy', "save_timeseries", "clean", "noresample",\
-														"reconstruct", 'noplot', 'silent', "glitchgram_start=", "glitchgram_end="])
+														"reconstruct", 'noplot', 'silent', "glitchgram_start=", "glitchgram_end=",\
+														"variance="])
 	except getopt.error, msg:
 		print msg
 		sys.exit(1)
@@ -433,6 +442,10 @@ def __check_options_and_args__(argv):
 			glitchgram_start = int(value)
 		elif option == "--glitchgram_end":
 			glitchgram_end = int(value)
+		elif option == "--variance":
+			AUTOCHOOSE_COMPONENTS = True
+			VARIANCE_PERCENTAGE = float(value)
+			components_number = 0
 		else:
 			print "Unknown option."
 			sys.exit()
@@ -448,6 +461,28 @@ def __check_options_and_args__(argv):
 				print "Check start and end time. Quitting."
 				sys.exit()
 	
+	if not ( any( "--components" in o for o in opts)):
+		if not (any( '--variance' in o for o in opts) ):
+			print "Either --components (number of principal components used for clustering)"
+			print "or --variance (percentage of explained variance used) have to be"
+			print "supplied. Quitting."
+			sys.exit()
+		elif (any('--variance' in o for o in opts)):
+			if (VARIANCE_PERCENTAGE <= 0) or (VARIANCE_PERCENTAGE>1.0):
+				print "Variance percentage has to be in the ]0,1] interval."
+				print "Quitting."
+				sys.exit()
+	elif ( any( "-components" in o for o in opts)):
+		if (components_number > variables):
+			print "The number of principal components used for clustering has to be lower"
+			print "or equal than the number of variables. Quitting."
+			sys.exit()
+		elif (components_number == 0):
+			# If the number of supplied components is zero, fall back to 75% 
+			# explained variance.
+			AUTOCHOOSE_COMPONENTS = True
+			VARIANCE_PERCENTAGE = 0.75
+				
 	if not ( any( flag in o for flag in [ "--start", "--end", "--list"] for o in opts )):
 		print "Start and end GPS time or a list of GPS times have to be supplied. Quitting."
 		sys.exit()
@@ -674,9 +709,13 @@ def __print_parameters__():
 			seconds_per_trigger = float(variables)/sampling
 		print "\t\t (%.3f s per trigger)" % seconds_per_trigger
 		print "\t\t Threshold:\t\t\t", threshold
-		if RECONSTRUCT:
+		if RECONSTRUCT and not AUTOCHOOSE_COMPONENTS:
 			print "\t\t Identified transients plots:\tReconstructed using the"
 			print "\t\t\t\t\t\tfirst {0} principal components".format(components_number)
+		elif AUTOCHOOSE_COMPONENTS and RECONSTRUCT:
+			print "\t\t Identified transients plots:\tReconstructed using the"
+			print "\t\t\t\t\t\tusing principal component accounting"
+			print "\t\t\t\t\t\tfor {0:.1%} of the variance".format(VARIANCE_PERCENTAGE)
 		else:
 			print "\t\t Identified transients plots:\t Raw time series"
 	elif ( "frequency" in ANALYSIS ):
@@ -694,7 +733,11 @@ def __print_parameters__():
 			print "\t\tPSD resolution:\t\t\t%.2f Hz (%i points)" % ( resolution, variables )
 	print 
 	print "\t - PCA and GMM:"
-	print "\t\t Components Number:\t\t", components_number
+	if AUTOCHOOSE_COMPONENTS:
+		print "\t\tPercentage of total"
+		print "\t\tvariance explained:{0:.2%}".format(VARIANCE_PERCENTAGE)
+	else:
+		print "\t\tComponents Number:\t\t", components_number
 	print "\t\t Maximum Clusters:\t\t", max_clusters
 	
 	global CLEAN
@@ -1137,7 +1180,6 @@ def pipeline(args):
 					log = open(log_name, "a")
 					log.write( "ERROR SAVING:\t'{0}'\n".format(out_file))
 					log.close()
-			del PSDs
 			# Update progress bar
 			if not SILENT:
 				global progress, progress_index
@@ -1334,7 +1376,8 @@ def pipeline(args):
 	# Columns means and standard deviations are stored in means
 	# stds should be a numpy array of ones, unless matrix_whiten(..., std=True)
 	# in PCA()
-	score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number, )
+	global components_number
+	score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number, variance=VARIANCE_PERCENTAGE )
 	
 	# Save pickled Principal Components 
 	f = open("Principal_components.dat", "wb")
@@ -1342,14 +1385,19 @@ def pipeline(args):
 	f.close()
 	print "\tSaved 'Principal_components.dat'"
 	
+	explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
 	
-	print "\n\tClustering using the first {0} principal components.".format(components_number)
+	
+	if AUTOCHOOSE_COMPONENTS:
+		components_number = np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0))
+	print "\n\tClustering using the first {0} principal components, accounting for {1:.1%} of the total variance".format(components_number, explained_variance[components_number])
 	print "\t  Maximum clusters: {0}".format(max_clusters)
 	
 	# Cluster the score matrix using gaussian_mixture().
 	# Only use the first 'components_number' components, and standardize input 
 	# data (set zero mean and unit variance) using matrix_whiten to improve
 	# clustering.
+	
 	reduced_whitened_scores, tmp_means, tmp_stds = matrix_whiten(score_matrix[:, :components_number], std=True)
 	labels = gaussian_mixture(reduced_whitened_scores, upper_bound=max_clusters, SILENT=SILENT)
 	
