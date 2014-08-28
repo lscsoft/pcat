@@ -242,7 +242,7 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
                 print >>output_file, "<tr><td>{0}</td><td align='right'>No glitches found</td><td align='right'> </td></td> <td align='right'><a href='{1}'>Results</a> (<a href='{1}parameters.txt'>parameters</a>)</td></tr>".format(results[0], results_frequency[index][1])    
     else:
         # Print only time domain headers
-        print >>output_file, "<tr><th>Channel name</td><th align='right'>Time Domain</th> <th align='right'>Glichgram</th><th align='right'>Time Domain parameters></th></tr>"
+        print >>output_file, "<tr><th>Channel name</td><th align='right'>Time Domain</th> <th align='right'>Glichgram</th><th align='right'>Time Domain parameters</th></tr>"
         for index, results in enumerate(results_time):
             if (results[1]):
                 print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td></tr>".format(*results)    

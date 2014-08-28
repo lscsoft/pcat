@@ -340,7 +340,8 @@ def __check_options_and_args__(argv):
 	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
 	
 	components_number = 40
-	AUTOCHOOSE_COMPONENTS = True
+	AUTOCHOOSE_COMPONENTS = False
+	
 	SILENT = False
 	NOPLOT = False
 	CLEAN = False
@@ -477,11 +478,11 @@ def __check_options_and_args__(argv):
 			print "The number of principal components used for clustering has to be lower"
 			print "or equal than the number of variables. Quitting."
 			sys.exit()
-		elif (components_number == 0):
-			# If the number of supplied components is zero, fall back to 75% 
-			# explained variance.
-			AUTOCHOOSE_COMPONENTS = True
-			VARIANCE_PERCENTAGE = 0.75
+	if (components_number == 0) and not AUTOCHOOSE_COMPONENTS:
+		# If the number of supplied components is zero, fall back to 75% 
+		# explained variance.
+		AUTOCHOOSE_COMPONENTS = True
+		VARIANCE_PERCENTAGE = 0.75
 				
 	if not ( any( flag in o for flag in [ "--start", "--end", "--list"] for o in opts )):
 		print "Start and end GPS time or a list of GPS times have to be supplied. Quitting."
@@ -735,7 +736,7 @@ def __print_parameters__():
 	print "\t - PCA and GMM:"
 	if AUTOCHOOSE_COMPONENTS:
 		print "\t\tPercentage of total"
-		print "\t\tvariance explained:{0:.2%}".format(VARIANCE_PERCENTAGE)
+		print "\t\tvariance explained:\t\t{0:.2%}".format(VARIANCE_PERCENTAGE)
 	else:
 		print "\t\tComponents Number:\t\t", components_number
 	print "\t\t Maximum Clusters:\t\t", max_clusters
