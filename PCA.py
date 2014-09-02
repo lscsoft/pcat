@@ -232,7 +232,7 @@ def eigensystem(matrix):
 	return eigenvalues, eigenvectors
 
 
-def PCA(matrix, components_number=50, variance=0):
+def PCA(matrix, components_number=50, variance=None):
 	'''
 	This function performs PCA on the input matrix, if variance
 	is supplied (defaults to 0), then the explained variance
@@ -255,13 +255,13 @@ def PCA(matrix, components_number=50, variance=0):
 	
 	covariance_matrix = np.cov( matrix.transpose() )
 	eigenvalues, principal_components = eigensystem( covariance_matrix )
+	if variance:
+		if (variance !=0) and (variance <= 1):
+			explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
+			components_number = np.argmax(np.where(explained_variance<variance, explained_variance,0))
+		elif (variance <= 0) or (variance >1):
+			assert False, "variance has to be in the ]0,1] interval"
 	
-	if (variance !=0) and (variance <= 1):
-		explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
-		components_number = np.argmax(np.where(explained_variance<variance, explained_variance,0))
-	elif (variance <= 0) or (variance >1):
-		assert False, "variance has to be in the ]0,1] interval"
-		
 	if ( components_number != 0 ):	
 		fig = plt.figure()
 		ax = fig.add_subplot(111)

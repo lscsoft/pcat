@@ -549,7 +549,8 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 		if ("bands" in ANALYSIS):	
 			freq_array = np.linspace(low, high, waveform_len)
 		else:
-			freq_array = rfftfreq( 2*(waveform_len-1), d=1./f_sampl )
+			#freq_array = rfftfreq( 2*(waveform_len-1), d=1./f_sampl )
+			freq_array, tmp = matplotlib.mlab.psd
 		fig_all, ax_all = configure_subplot_freq(len(average_observation_matrix)+1)
 		if ("bands" in ANALYSIS):
 			for element in ax_all:
@@ -558,7 +559,6 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			for element in ax_all:
 				element.set_xbound( lower=10, upper=np.max(freq_array) )
 				element.autoscale(True, "y", tight=True)
-		
 	elif ( "time" in ANALYSIS ):
 		time_axis =  (np.array(range(waveform_len))/f_sampl)*1000.0
 		max_index = waveform_len//2
@@ -596,10 +596,10 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				# Only plot frequencies above 10 Hz:
 				# only choose indexes corresponding to freq_array>10
 				if not ( "bands" in ANALYSIS):
-					ax.plot( freq_array[freq_array>10], np.power(10, element[freq_array>10]), "r-", linewidth = 0.4)
-					ax_all[index].plot( freq_array[freq_array>10], np.power(10, element[freq_array>10]), "r-", linewidth = 0.4)
+					ax.plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
+					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent) )
-					ax_all[-1].plot( freq_array[freq_array>10], np.power(10, element[freq_array>10]), markers_and_colors[index][1]+marker, linewidth=0.4)
+					ax_all[-1].plot( freq_array, np.power(10, element), markers_and_colors[index][1]+marker, linewidth=0.4)
 				elif ("bands" in ANALYSIS):
 					ax.plot(freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
@@ -638,7 +638,6 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				plt.autoscale(True, axis="y", tight=True)
 			
 			fig.savefig(output, dpi = DPI)
-		
 	
 	
 	if ( "time" in ANALYSIS):
@@ -653,14 +652,14 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			ax_all[0].autoscale(enable=True, axis="y", tight=True)
 			ax_all[-1].set_xticks( np.logspace(np.log10(low), np.log10(high), num=10) )
 			ax_all[-1].set_xticklabels([ "%.2f" % el for el in ax.get_xticks()])
-			
 		elif ("frequency" in ANALYSIS):
 			ax_all[0].set_xbound( lower=10, upper=np.max(freq_array) )
 			ax_all[-1].axis("tight")
 		box = ax_all[-1].get_position()
 		ax_all[-1].set_position([box.x0, box.y0, box.width * 0.8, box.height])
 		ax_all[-1].legend( plotlabels, loc="best", bbox_to_anchor=(1.25, 1))
-		ax_all[-1].axis("tight")	
+		ax_all[-1].axis("tight")
+	
 	print "\tSaving types details..."
 	fig_all.savefig( str(cluster_number) +" - All_types.pdf", dpi = DPI, bbox_inches='tight', pad_inches=0.2)
 	print "\tSaved \"All_types.pdf\"."
@@ -980,7 +979,7 @@ def plot_psds(database, PCA_info, components_number, labels, f_sampl, ANALYSIS="
 			if ( "bands" in ANALYSIS):
 				ax.plot( freq_array, np.power(10, reconstructed[index]), label="Reconstructed - {0} PCs".format(components_number) )
 			else:
-				ax.plot( freq_array[freq_array>10], np.power(10,reconstructed[index][freq_array>10]), label="Reconstructed - {0} PCs".format(components_number) )
+				ax.plot( freq_array, np.power(10,reconstructed[index]), label="Reconstructed - {0} PCs".format(components_number) )
 			labels_list.append( "Reconstructed - {0} PCs".format(components_number) )
 			ax.legend(labels_list, loc = 'best', markerscale = 2, numpoints = 1)
 		ax.set_xscale('log')
@@ -992,7 +991,7 @@ def plot_psds(database, PCA_info, components_number, labels, f_sampl, ANALYSIS="
 			ax.set_xticks( np.logspace(np.log10(low), np.log10(high), num=10))
 			ax.set_xticklabels([ "%.2f" % el for el in ax.get_xticks()])
 		else:
-			ax.plot( freq_array[freq_array>10], np.power(10, spike.waveform)[freq_array>10], 'r-', linewidth = 0.4 )
+			ax.plot( freq_array, np.power(10, spike.waveform), 'r-', linewidth = 0.4 )
 		fig.savefig( "PSDs/Type_%i/%i-%i.png" % (labels[index]+1, spike.segment_start, spike.segment_end), bbox_inches='tight', pad_inches=0.2)
 		plt.close('all')
 		del fig

@@ -290,10 +290,11 @@ def __usage__():
 	print "\t\tvariables_n/sampling_frequency"
 	print "\twith sampling_frequency being 4096 Hz if --whiten"
 	print "\tor the input value if --resample.\n"
+	
 	print "\tIf in frequency-domain, this sets frequency resolution of "
 	print "\tthe computed spectrum: resolution equals to"
 	print "\t\tnyquist_frequency/variables_n. "
-	print "\t(where nyquist frequency is half of the sampling frequency."
+	print "\t(where the Nyquist frequency is half of the sampling frequency."
 	print "\tWhen performing frequency-domain analysis, for faster computation,"
 	print "\tvariables_n should be a power of two."
 	print "\tDefault values are 512 for time-domain and 2048 for frequency-domain."
@@ -494,7 +495,10 @@ def __check_options_and_args__(argv):
 	elif ( any( flag in o for flag in ['--start', '--end'] for o in opts) and any('--list' in o for o in opts )):
 			print "Choose one between --list or --start and --end. Quitting."
 			sys.exit()	
-		
+	
+	if not any( flag in o for flag in [ "--channel", "-c"] for o in opts ):
+		print "Channel name has to be supplied through '--channel' or '-c'. Quitting."
+		sys.exit()
 	if not ( any( flag in o for flag in ['--IFO', "-I"] for o in opts ) ):
 		print "IFO ('L', 'H' or 'H1_R') has to be supplied"
 		print "through the --IFO or -I flags. Quitting."
@@ -1378,8 +1382,10 @@ def pipeline(args):
 	# stds should be a numpy array of ones, unless matrix_whiten(..., std=True)
 	# in PCA()
 	global components_number
-	score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number, variance=VARIANCE_PERCENTAGE )
-	
+	if AUTOCHOOSE_COMPONENTS:
+		score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number, variance=VARIANCE_PERCENTAGE )
+	else:
+		score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number)
 	# Save pickled Principal Components 
 	f = open("Principal_components.dat", "wb")
 	pickle.dump(principal_components, f)
@@ -1406,6 +1412,11 @@ def pipeline(args):
 	# Print information about found clusters:
 	cluster_number = len( np.unique(labels) )
 	colored_clusters = color_clusters( score_matrix, labels )
+	
+	# Save the type the glitch belongs to in the "type" attribute
+	for index, spike in enumerate(data_list):
+		spike.type = labels[index]
+	
 	print_cluster_info(colored_clusters)	
 		
 	# Save scatterplot with image map:
@@ -1465,6 +1476,8 @@ def pipeline(args):
 		del fig
 		del axs
 	print "\tSaved triangle plot ('All scatterplots.png')"	
+	
+	
 	# Compute an "average transient" for each type.
 	# The average transient is obtained by averaging all the glitches
 	# in a certain type in the principal component space, by inverting
@@ -1473,6 +1486,7 @@ def pipeline(args):
 		calculate_types(data_list, colored_clusters, score_matrix, principal_components, means, stds, labels, ANALYSIS, sampling, low, high)
 	else:
 		calculate_types(data_list, colored_clusters, score_matrix, principal_components, means, stds, labels, ANALYSIS, sampling)
+	
 	
 	plotted_components = components_number
 	if ("time" in ANALYSIS):
