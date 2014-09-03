@@ -1,3 +1,8 @@
 Things to implement/fix, in no particular order
 - Glitch classification confidence level, using the methods of sklearn.mixture.gmm
 - Switch the configurations files to .ini and use python ConfigParse
+- Find an authomatic method to choose the number of principal components used
+    when clustering, the ideal would be finding the knee of the curve.
+    This should me the point at which the curvature:
+        K(x) = |f''(x)|/{1+[f'(x)]^2}^(3/2)
+    has a maximum.
