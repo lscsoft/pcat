@@ -399,15 +399,31 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	start_time and end_time are the earliest and the latest GPS times
 	
 	"""
-	DPI = 100
+	DPI = 300
 	fig = plt.figure(figsize=(12,3*6), dpi=DPI)
 	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
 	ax = fig.add_subplot(311, axisbg="gray", alpha=0.05)
 	ax3 = fig.add_subplot(313, alpha=0.05, axisbg="gray")
 	ax2 = fig.add_subplot(312, axisbg="gray", alpha=0.05)
-	ax.set_xlabel("Time [GPS time]")
+	ax.set_xlabel("Time since GPS time {0}".format(start_time))
 	ax.set_ylabel("Frequency [Hz]")
 	ax.set_yscale('log')
+	
+	if (end_time-start_time)>4*3600:
+		units = "h" # hours
+	elif (end_time-start_time)>5*60:
+		units = "m" # minutes
+	else:
+		units = "s" # seconds
+	def tformat(x):
+		"""tick formatter definition"""
+		x -= start_time
+		if units == "h":
+			x /= 3600.0
+		elif units == "m":
+			x /= 60.0
+		tick = "{0:.1f} {1}".format(x, units)
+		return tick
 	
 	time_axis = []
 	peak_frequencies = []
@@ -443,6 +459,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		#tmp = np.sum(PSD*freqs)
 		#central_freq = (np.sum(PSD*freqs))/PSD.sum()
 		peak_frequency = freqs[np.argmax(PSD)]
+		spike.peak_frequency = peak_frequency
 		#y_axis.append(central_freq)
 		peak_frequencies.append(peak_frequency)
 		SNRs.append(spike.SNR)
@@ -454,19 +471,19 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	
 	# Define ticks and define ax (glitchgram with color according to SNR)
 	x_ticks = [start_time]
-	x_ticks_labels = [str(int(start_time))]
+	x_ticks_labels = ["0"]
 	interval = end_time-start_time
 	step = (interval)//15
 	
 	range_end = end_time-step
 	for i in range(start_time+step, range_end, step):
 		x_ticks.append(i)
-		x_ticks_labels.append("{0:d}".format((i)))
+		x_ticks_labels.append(tformat(i))
 	x_ticks.append(end_time)
-	x_ticks_labels.append(str(int(end_time)))
+	x_ticks_labels.append(tformat(end_time))
 	
 	ax.set_xticks(x_ticks)
-	ax.set_xticklabels(x_ticks_labels, rotation=-15, fontsize=10)
+	ax.set_xticklabels(x_ticks_labels, fontsize=12)
 	
 	# Color in green the part of the plot corresponding to locked times
 	# (defined in the 'times' variable)
@@ -513,21 +530,20 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax3.yaxis.grid(which="both")
 	ax3.xaxis.grid(which="major")
 	ax3.set_title("SNR distribution")
-	ax3.set_xlabel("GPS time [s]")
+	ax3.set_xlabel("Time since GPS time {0}".format(start_time))
 	ax3.autoscale(True, axis="x", tight=True)
 	ax3.set_yscale('log')
 	ax3.autoscale(True, axis="y", tight=True)
 	#ax3.set_ylim( (1., np.max(SNRs)) )
 	ax3.set_xticks(x_ticks)
-	plt.xticks(x_ticks, x_ticks_labels, rotation=-15, fontsize=10)
-	plt.setp(ax3.get_xticklabels(), fontsize=10, rotation=-15)
+	plt.xticks(x_ticks, x_ticks_labels, fontsize=12)
 	ax3.set_ylabel("SNR")	
 	# Resize ax3 to have the same dimensions as ax, which is smaller
 	# due to the colorbar
 	box = ax3.get_position()
 	ax3.set_position([box.x0, box.y0, box.width*0.94, box.height])
 	ax3.set_xticks(x_ticks)
-	ax3.set_xticklabels(x_ticks_labels, rotation=-15, fontsize=10)
+	ax3.set_xticklabels(x_ticks_labels, fontsize=12)
 	
 	# Plot the scatterplot are colored and sized according to SNR
 	
@@ -579,7 +595,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax2.autoscale(False, axis="both")
 	ax2.set_ylim((highpass_cutoff, int(1.50*(f_sampl//2)) ))
 	ax2.set_yscale('log')
-	ax2.set_xlabel("GPS Time [s]")
+	ax2.set_xlabel("Time since GPS time {0}".format(start_time))
 	ax2.set_ylabel("Peak Frequency [Hz]")
 	ax2.yaxis.grid(which="both")
 	ax2.xaxis.grid(which="major")
