@@ -373,7 +373,7 @@ def create_data_matrix_from_psds(file_name_list, ANALYSIS, f_sampl, low=None, hi
 		spike = Spike(int(start), int(end),
 						 0, normalization,
 						0, int(start), int(end),
-						tmp)
+						tmp, f_sampl)
 		database.append(spike)
 		
 	return database, np.array(waveforms)
@@ -422,7 +422,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			x /= 3600.0
 		elif units == "m":
 			x /= 60.0
-		tick = "{0:.1f} {1}".format(x, units)
+		tick = "{0:.1f}{1}".format(x, units)
 		return tick
 	
 	time_axis = []
