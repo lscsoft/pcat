@@ -74,8 +74,6 @@ MAX_PLOTTED_COMPONENTS = 5
 # Boolean: apply High Pass filter
 global HIGH_PASS
 HIGH_PASS = True
-# Boolean: double whiten the data
-DOUBLE_WHITENING = False
 # Decide if data is resampled to ANALYSIS_FREQUENCY (if not supplied through
 # --resample, then it's set to 4096.0)
 global RESAMPLE
@@ -1003,7 +1001,7 @@ def pipeline(args):
 				conditioned_folder = "whitened/"
 			conditioning_function = lambda x: whiten(x['waveform'], download_overlap_seconds, f_sampl=x['fs'], resample_freq=ANALYSIS_FREQUENCY, \
 									highpass=HIGH_PASS, highpass_cutoff=HIGH_PASS_CUTOFF,\
-									resample=RESAMPLE, double_whitening=DOUBLE_WHITENING)
+									resample=RESAMPLE)
 		else:
 			# If no kind of processing is required return the unprocessed time
 			# series.
@@ -1419,7 +1417,9 @@ def pipeline(args):
 	
 	print_cluster_info(colored_clusters)	
 		
-	# Save scatterplot with image map:
+	# Save scatterplot with image maps:
+	# images are saved to a subfolder, "Scatterplot_images", defined in 
+	# scatterplot()
 	output = "Scatterplot-%i_clusters-" % cluster_number
 	for x in range( 1, MAX_PLOTTED_COMPONENTS+1 ):
 		for y in range ( 1, MAX_PLOTTED_COMPONENTS+1 ):
@@ -1496,9 +1496,11 @@ def pipeline(args):
 		for element in ax_all:
 			element.autoscale(True, axis="both", tight=True)
 	
+	
+	os.makedirs("Principal_components")
 	# Plot the first  plotted_components principal components:
 	for i in range(0, plotted_components):
-		fig = plt.figure(figsize=(12, 6), dpi=300)
+		fig = plt.figure(num=i, figsize=(12, 6), dpi=300)
 		ax = fig.add_subplot(111)
 		
 		ax.grid(which="both")
@@ -1536,7 +1538,8 @@ def pipeline(args):
 		ax_all[i].set_title("Principal Component: " + str(i+1) )
 			
 		ax.set_title( "Principal Component: %i" % (i+1) )
-		fig.savefig("Principal_component-%i.png" % (i+1), dpi=DPI, bbox_inches='tight', pad_inches=0.2)
+		fig.savefig("Principal_components/Principal_component-%i.png" % (i+1), dpi=DPI, bbox_inches='tight', pad_inches=0.2)
+		plt.close(fig)
 	fig_all.savefig("All_principal_components.pdf", bbox_inches='tight', pad_inches=0.2)
 	plt.close('all')
 	del ax_all
