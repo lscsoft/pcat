@@ -6,7 +6,9 @@ brethil@phy.olemiss.edu
 Definition of the Spike Class:
 The Spike class is used to store the information about a spike, such as amplitude, 
 	 peak position, start and end, so the original data can be retrieved:
-		spike=Spike() 	
+	spike=Spike()
+	
+	For time domain analysis the attributes are:
 		spike.start			->	Starting point
 		spike.end			->	Ending point
 		spike.peak			->	Peak point
@@ -21,6 +23,14 @@ The Spike class is used to store the information about a spike, such as amplitud
 		spike.type			->	Type
 		spike.peak_frequency->	Peak frequency
 	
+	For frequency domain analysis:
+		spike.segment_start	->	Segment start in GPS time
+		spike.segment_end	->	Segment end in GPS time
+		spike.waveform		->	PSD for the segment
+		spike.sampling		->	Sampling frequency for the original data
+	
+	
+	To get a list of all the defined attributes:
 	import inspect
 	variables = [i for i in dir(t) if not inspect.ismethod(i)
 	
