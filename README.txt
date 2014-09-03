@@ -269,7 +269,7 @@ Misc:
                      transients found with finder.py and is also used used in 
                      GMM.py, PCA.py, merge_database.py and
                      spikes_time_series.py.
-                     Information stored in a Spike() instance:
+                     Information stored in a Spike() instance for time domain:
                         spike.start             -> Transient starting point.
                         spike.end               -> Transient ending point
                         spike.width             -> Number of points above N*sigma.
@@ -290,7 +290,16 @@ Misc:
                         spike.sampling          -> Sampling Frequency
                         spike.type              -> Type
                         spike.peak_frequency    -> Peak frequency  
-                                             
+                    For frequency domain:
+                        spike.start             -> Segment start (GPS time)
+                        spike.end               -> Segment end (GPS time)
+                        spike.waveform          -> PSD for the segment
+                        spike.sampling          -> Sampling frequency
+                    
+                    To get a list of all the defined attributes (python code): 
+                    > import inspect
+                    > variables = [i for i in dir(t) if not inspect.ismethod(i)
+                
      - utilities_PCAT.py Contains various functions (and module imports) used
                          all throughout PCAT.
 
@@ -419,6 +428,14 @@ or
 
 For usage GMM.py -h and PCA.py -h.
 
+This can be also loaded in python using the following python code:
 
-Output files can be merged using database.py (call with -h for help).
+> import pickle
+> with open("database.list", "rb") as f:
+>   database = pickle.load(f)
+
+if the database is from time domain analysis,
+
+
+".list" files can be merged using database.py (call with -h for help).
 
