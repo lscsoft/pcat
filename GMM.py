@@ -638,6 +638,7 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				plt.autoscale(True, axis="y", tight=True)
 			
 			fig.savefig(output, dpi = DPI)
+			plt.close(fig)
 	
 	
 	if ( "time" in ANALYSIS):
@@ -1003,16 +1004,37 @@ def plot_psds(database, PCA_info, components_number, labels, f_sampl, ANALYSIS="
 
 def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, y, output, ANALYSIS):
 	'''
-		This function plots a scatterplot of the columns x vs y of the
+		This function plots an html image map scatterplot of the columns x vs y of the
 		score matrix, also generating an image map linked to the corresponding
 		observation e.g.:
 			observation x links to 'time_series/Type_y/event_gps_time.pdf'
 		This way each point in the scatterplot can be clicked to obtain the 
 		time series of the clicked observation.
 		
+		- score_matrix
+			Score matrix obtained with PCA.PCA() (numpy array)
+		- spike_database
+			List of Spike() istances (list)
+		- colored_clusters_list
+			List of clusters, each cluster containing the scores to scatterplot
+		- labels
+			Labels for spike_database (list of integers, same size as spike_database)
+		- x
+			column to scatterplot (x axis) (integer)
+		- y
+			column to scatterplot (y_axis) (integer)
+		- output
+			name of the output plot (string)
+		- ANALYSIS
+			Type of analysis being performed (string)
+		
 	'''
 	DPI = 100
-	
+	images_folder = "Scatterplots_images"
+	try:
+		os.makedirs(images_folder)
+	except:
+		pass
 	
 	fig = plt.figure(dpi=DPI, edgecolor='k', frameon=True)#, figsize=(8.15, 6))
 	ax = fig.add_subplot(111)
@@ -1055,9 +1077,12 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	# If analysis is generic, no additional steps are needed
 	# The image map code does not need to be run. Return.
 	if ( "generic" in ANALYSIS ):
-		fig.savefig(output + ".png", dpi=fig.get_dpi())
+		fig.savefig(images_folder + "/" + output + ".png", dpi=fig.get_dpi())
 		plt.close('all')
 		return
+	
+	fig.savefig(images_folder + "/" + output + ".png", dpi=fig.get_dpi() )
+	plt.close('all')
 	
 	###
 	# Finished plotting. Now creating the image map (only for 'time' and
@@ -1105,10 +1130,7 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	# need to do height - y for the image-map
 	fmts = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords, info_list) ]
 		
-	fig.savefig(output + ".png", dpi=fig.get_dpi() )
-	plt.close('all')
-	
-	print >> open(output + ".html", 'w'), tmpl % (output, "\n".join(fmts))
+	print >> open(output + ".html", 'w'), tmpl % (images_folder + "/" + output, "\n".join(fmts))
 	#print "\tWritten: " + output + " (html and png)"
 
 
@@ -1119,9 +1141,14 @@ def chisquare_test(database, labels):
 		Takes as input a list of (colored) clusters, labels for the (full) database
 		and tests for the goodness of the clustering using a chisquare-based
 		test.
+		T
+		HIS IS BROKEN.
+		A confidence level can be implemented through the gmm class of scikit-learn 
 	"""
+	#TODO: check out GMM class functions sklearn.mixture.gmm, in particular gmm.predict_proba, gmm.score
+	print "chisquare_test() IS OBSOLETE, UNTESTED and probably useless."
 	
-	# Create a database for 
+	"""# Create a database for 
 	cluster_number = len(np.unique(labels))
 	colored_database = [[] for i in range(cluster_number)]
 	for index, spike in enumerate(database):
@@ -1190,7 +1217,7 @@ def chisquare_test(database, labels):
 	plt.close('all')
 	
 	print "\tSaved 'Chisquare.pdf'."
-	
+	"""
 	return
 
 
