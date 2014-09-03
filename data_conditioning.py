@@ -63,6 +63,18 @@ HIGH_PASS_CUTOFF = 40.0
 ################# END OF PARAMETER DEFINITIONS ################
 ################################################################
 
+##### DISCRETE FOURIER TRANSFORM DEFINITIONS (whitening) #####
+# Direct Fourier transform of a signal s_n:
+#  h_k = dt \sum_{n=0}^{N-1} s_n exp(2 pi i n k/N)
+# Inverse Fourier transform:
+# s_n = df \sum_{k=0}^{N-1} h_k exp(-2 pi i n k/N)
+# Using numpy's built in DFT routines, these become:
+# h = dt * np.fft.rfft(s)
+# s = df * np.fft.irfft(h)
+#
+# dt is the sampling period, df=1/(N*dt), N is the number of points
+# of s: N=len(s)
+
 def __usage__():
 	'''
 		Usage
@@ -114,10 +126,10 @@ def __check_options_and_args__():
 	CUSTOM_OUT = False
 	global excluded_seconds
 	global SAMPLING_FREQUENCY
-	global RESAMPLE, HIGH_PASS, HIGH_PASS_CUTOFF, double_whitening
+	global RESAMPLE, HIGH_PASS, HIGH_PASS_CUTOFF
 	
 	excluded_seconds = -1
-	double_whitening = False
+	
 	RESAMPLE = True
 	HIGH_PASS = True
 	
@@ -128,8 +140,7 @@ def __check_options_and_args__():
 	else:
 		try:
 			opts, args = getopt.getopt(sys.argv[1:], "s:ph",  [ 'help', 'pickled' ,'sampling=','noresample',\
-			 												'nohighpass', 'highpasscutoff=',\
-			 												'doublewhitening', 'remove_seconds='] )
+			 												'nohighpass', 'highpasscutoff=', 'remove_seconds='] )
 		except getopt.error, msg:
 			print msg
 			sys.exit(1)
@@ -149,8 +160,6 @@ def __check_options_and_args__():
 				HIGH_PASS_CUTOFF = float(a)
 			elif ( o == '--remove_seconds' ):
 				excluded_seconds = float(a)
-			elif ( o == '--doublewhitening' ):
-				double_whitening = True
 			else:
 				assert False, "Unknown option."
 	if not ( any( flag in o for flag in ['-s'] for o in opts ) ):
@@ -252,7 +261,7 @@ def low_pass_filter(time_series, cutoff, f_sampl, order):
 	return filtered_time_series
 
 
-def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True, highpass_cutoff=HIGH_PASS_CUTOFF, resample=True, double_whitening=False):
+def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True, highpass_cutoff=HIGH_PASS_CUTOFF, resample=True):
 	'''
 		Whitens the input time series.
 		
@@ -285,9 +294,6 @@ def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True,
 				Sampling frequency for the input time series.
 			- highpass (boolean, optional, default=True)
 				True for high-pass filtering.
-			- double_whitening (boolean, optional, default=False)
-				True for double whitening is requested.
-				(take the square of the whitening coefficients)
 			- resample (boolean, optional, default=True)
 				Downsample the data to ANALYSIS_FREQUENCY if True.
 		
@@ -343,12 +349,18 @@ def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True,
 	
 	# The whitening coefficients are given by the inverse of square root of the
 	# PSD
-	# If double whitening is requested, we need to take the square of the 
-	# cofficients (apply twice)
-	if double_whitening:
-		coefficients =  2.0/interpolated_PSD 
-	else:
-		coefficients = np.sqrt(2.0/interpolated_PSD)
+	# The choice of the coefficients changes the units (and the normalization)
+	# of the whitened time series:
+	#   - if using sqrt(2*delta_f/PSD), then whitened time series is in units 
+	#     of Hz
+	
+	#coefficients = np.sqrt((2.0*delta_f)/interpolated_PSD)	
+	
+	#   - if using sqrt(2/PSD), the whitened time series is in units of sqrt(Hz)
+	coefficients = np.sqrt((2.0)/interpolated_PSD)
+	
+	
+
 	
 	
 	# Multiply coefficients by the high pass filter coefficients
@@ -358,18 +370,22 @@ def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True,
 		x_tmp = np.arange(len(coefficients))
 		coefficients = np.where(frequencies_to_interpolate < highpass_cutoff, 0.0, coefficients)
 		
-		"""# High pass filter frequency domain coefficients
+		"""
+		# High pass filter frequency domain coefficients
 		highpass_coeffs = high_pass_coefficients(frequencies_to_interpolate, highpass_cutoff, f_sampl, HIGH_PASS_ORDER)
 		
 		coefficients *= highpass_coeffs
 		"""
+	
 	# The whitened time series is given by taking the inverse of the
 	# transformed time series spectrum where each fequency bin is
 	# weighted by the computed coefficients
 	# Multiply by delta_f to obtain the correctly normalized result. 
 	whitened_time_series = np.real( delta_f * np.fft.irfft(transform*coefficients) )
 	
-	#FIXME: CHECK WHETHER NORMALIZATION IS CORRECT. IT MIGHT BE ONLY A FACTOR OF 2 (OR SQRT(2) IN THE WHITENING COEFFICIENTS, OUR RESULTS ARE ALWAYS ABOUT HALF THE ONES FROM WSCAN)
+	# The returned whitened time series normalization and units depend on the 
+	# choice of the whitened coefficients, see the above definition for the 
+	# coefficients.
 	return whitened_time_series
 
 
@@ -485,13 +501,15 @@ def median_mean_average_psd(time_series, segment_length, f_sampl):
 			continue
 		
 		# Compute periodogram and apply correct normalization:
-		# Since we used rfft, if integrating we have to multiply
+		# Since we used rfft, we have to multiply
 		# the result by 2 because rfft returns a one-sided version 
-		# (only positive frequencies) of the FFT
+		# (only positive frequencies) of the FFT and multiply by delta_f
+		# to obtain the correct units.
 		Pxx = np.abs( delta_t * np.fft.rfft(to_transform*window) )**2
 		# Apply correct normalization (from FINDCHIRP paper)
 		Pxx *= ( ( 2.0 * delta_f )/(window_normalization) ) 
 		
+		# Units are now counts^2 Hz^-1
 		
 		# Assign PSD to the correct bin	
 		if ( i % 2 == 0 ):
@@ -618,7 +636,7 @@ def compute_psd(time_series, resolution, f_sampl, overlap):
 	'''
 	NFFT = int(f_sampl/resolution)
 	
-	(PSD, freqs) = matplotlib.mlab.psd( time_series, Fs=f_sampl, NFFT=NFFT, noverlap=int(NFFT*overlap))
+	(PSD, freqs) = matplotlib.mlab.psd( time_series, Fs=f_sampl, NFFT=NFFT, noverlap=int(NFFT*overlap), scale_by_freq=True)
 	
 	return freqs, PSD
 
@@ -673,8 +691,7 @@ def main():
 			data = np.loadtxt(element)
 		
 		(conditioned_data, PSD) = whiten(data, SAMPLING_FREQUENCY, highpass=HIGH_PASS,\
-		 							highpass_cutoff=HIGH_PASS_CUTOFF, resample=RESAMPLE,\
-									double_whitening=double_whitening)
+		 							highpass_cutoff=HIGH_PASS_CUTOFF, resample=RESAMPLE)
 		
 		# Save data
 		f = open(element + ".whitened", "wb")
