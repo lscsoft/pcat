@@ -304,20 +304,28 @@ densities of short segments.
 
 Each time series is read from frame files and, if requested (off by default),
 is saved (in a binary format readable using numpy's load() function) to:
-    ~/PCAT/Data/$channel_name/$time_interval/raw_data
-where $time_interval and $channel_name depend on the parameters.
-The time series is then processed and the processed file is saved to
-    ~/PCAT/Data/$channel_name/$time_interval/$conditioned_folder
-where again where again $* depend on the parameters and the format
-is binary numpy.
+    ~/PCAT/Data/${CHANNEL_NAME}/${INTERVAL_IDENTIFIER}/raw_data
+where ${INTERVAL_IDENTIFIER} is either the name of the supplied list or start
+time and end time as supplied from the command line.
+
+The time series is processed and saved to
+    ~/PCAT/Data/${CHANNEL_NAME}/${INTERVAL_IDENTIFIER}/${CONDITIONED_FOLDER}
+where again where again ${CONDITIONED_FOLDER} depends on the command line
+arguments and the files are again binary, readable with numpy's load().
 
 A database of the is created and saved to the output folder, either:
-~/public_html/time_PCAT/$time_interval/$parameters
+~/public_html/time_PCAT/${CHANNEL_NAME}/${INTERVAL_IDENTIFIER}/${PARAMETERS}
 or
-~/public_html/frequency_PCAT/$time_interval/$parameters
+~/public_html/frequency_PCAT/${CHANNEL_NAME}/${INTERVAL_IDENTIFIER}/${PARAMETERS}
 
-Then plots are generated, and URL to the folder where the database and plots 
-are saved is returned.
+An URL to the folder where the database and plots are saved is returned.
+
+PCAT can also be run on a batch of channels using PCAT_configread.py, which takes
+as arguments either a list of times or a couple GPS times and two configuration
+files, one for time domain and one for frequency domain (see .config files for
+examples) and returns a summary page containing links to results for each channel.
+
+See PCAT_configread.py -h for more.
 
 Usage:
 
@@ -391,86 +399,12 @@ Usage:
 
 
 *******************************************************************************
-*************         Usage (full pipeline)                    ****************
+*************         Usage (output database)                  ****************
 *******************************************************************************
 
-Below is a step by step explanation on how to re-create PCAT's results
-using the standalone files. I discourage doing this, as the same results
-can be obtained without an headache by using PCAT.py.
-
-
-- One first has to download the data using download_frames.py:
-    
-    download_frames.py --IFO L --frame R -s 965282415 -e 965368815 
-                            -c L1:OMC-PD_SUM_OUT_DAQ
-   
-      --IFO sets the observatory (H or L)
-      --frame sets the frame type (if unsure check using ligo_data_find)
-  
- Data is split into 60 second segments. This can be customized through
- the --size option.
-
-- After downloading the data, data should be prepared for analysis.
-For time-domain either by whitening it using data_conditioning.py:
-(data is by high-passed and downsampled by default, see data_conditioning.py -h)
-
-    data_conditioning.py -s 16384
-                L-R-L1:OMC-PD_SUM_OUT_DAQ_965368792-965368815.data
-
-
-or by filtering it through pickled_butter.py:
-
-  pickled_butter.py -L 70 -H 6000 -S 32768
-                   L-R-L1:OMC-PD_SUM_OUT_DAQ_965368792-965368815.data
-  
-For frequency domain the PSD has to be computed:
-PSD.py -s 32768 --output_size 8192
- --output_size sets the frequency resolution of the PSD.
-Frequency resolution is simply sampling_frequency/output_size, so 4 Hz in this
-case.
-
-
-A quick way to prepare data is to use xargs to perform parallel processing:
-     ls to_filter_folder/ xargs -n 1 -i -P 4 pickled_butter.py -L 70 -H 6000 -S 32768 {}
-
-4 parallel processes filtering the data are started (xargs -P 4).
-
-
-- The time-domain conditioned data, either file_name.filtered, file_name.whitened)
-    can now be analyzed through finder.py:
-
-    finder.py -w 1500 -t 5.5 *.filtered 
-or
-    finder.py -w 1500 -t 5.5 *.whitened
-
-    The -w option sets the number of points we want to sample the transient at, 
-    -t sets the trigger threshold in units of the standard deviation of 
-    the segment being analyzed.
-    If noise instead of transients is picked up, one can either raise the
-    threshold (usually 4-5 is enough) or use the --loudness option (see
-    finder.py -h).
-
-- Output from finder is, by default, a pickled (binary) file, a python list
-containing Spike() class istances. The file will look like this:
-    
-    t-5.5_w-1500.list
-
-To get a list of all the attributes of each istance in the list, one can use:
-    import inspect
-    variables = [i for i in dir(t) if not inspect.ismethod(i)
-
-The first part shows the threshold info, the second the transient width	
-
-- For Frequency domain conditioned data use database.py on the conditioned
-files:
-    database.py --psd *.psd
-
-Yielding psd_database.data
-  
-  
-These files can now be used with PCA.py and GMM.py:
-For time-domain:
-
+PCAT outputs pickled list of Spike() istances. These can be used with
+PCA() and GMM() to avoid running the full pipeline twice:
+Usage example:
         PCA.py --time t-5.5_w-1500.list
 or
         GMM.py -s 32768 --time t-5.5_w-1500.list
@@ -481,19 +415,8 @@ For frequency-domain:
 or
         GMM.py -s 32768 --frequency psd_database.data
 
-For GMM.py and PCA.py usage, run with -h
+For usage GMM.py -h and PCA.py -h.
 
 
-To plot each of the transients found from finder.py, use
-spikes_time_series.py:
-	
-		spikes_time_series.py t-3.0_w-2000.list
-
-To plot power spectral densities run PSD.py with --plot.
-
-
-Files generated with finder.py (and database.py) can be merged using
-database.py.
-
-See database.py -h.
+Output files can be merged using database.py (call with -h for help).
 
