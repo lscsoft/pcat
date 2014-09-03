@@ -270,24 +270,26 @@ Misc:
                      GMM.py, PCA.py, merge_database.py and
                      spikes_time_series.py.
                      Information stored in a Spike() instance:
-                        spike.start         -> Transient starting point.
-                        spike.end           -> Transient ending point
-                        spike.width         -> Number of points above N*sigma.
-                                               (spike.end-spike.start)
-                        spike.peak          -> Transient peak point.
-                        spike.norm          -> Transient normalization constant
-                                               (for use with PCA.py).
-                        spike.waveform      -> Time Series
-                        spike.segment_start -> Segment start expressed 
-                                               in GPS time.
-                        spike.segment_end   -> Segment end expressed
-                                               in GPS time.
-                        spike.peak_GPS      -> Spike peak expressed 
-                                               in GPS time.
-                        spike.SNR           -> SNR of the glitch (time domain)
-                                               This is only meaningful when data
-                                               is whitened.
-                                               
+                        spike.start             -> Transient starting point.
+                        spike.end               -> Transient ending point
+                        spike.width             -> Number of points above N*sigma.
+                                                  (spike.end-spike.start)
+                        spike.peak              -> Transient peak point.
+                        spike.norm              -> Transient normalization constant
+                                                  (for use with PCA.py).
+                        spike.waveform          -> Time Series
+                        spike.segment_start     -> Segment start expressed 
+                                                  in GPS time.
+                        spike.segment_end       -> Segment end expressed
+                                                  in GPS time.
+                        spike.peak_GPS          -> Spike peak expressed 
+                                                  in GPS time.
+                        spike.SNR               -> SNR of the glitch (time domain)
+                                                  This is only meaningful when data
+                                                  is whitened.
+                        spike.sampling          -> Sampling Frequency
+                        spike.type              -> Type
+                        spike.peak_frequency    -> Peak frequency  
                                              
      - utilities_PCAT.py Contains various functions (and module imports) used
                          all throughout PCAT.
