@@ -23,7 +23,7 @@ from data_conditioning import median_mean_average_energy
 
 def __usage__():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
-		[--loudness loudness] [--ascii, -a] [-i]\n\
+		[--ascii, -a] [-i]\n\
 		[--remove_seconds seconds] [--energy] [--timing]\n\
 		[-o FILE, --output file] file1 file2 file3 ..."
 	
@@ -70,14 +70,6 @@ def __usage__():
 	print "\t--energy\n\
 		Set the normalization constant to the transient's energy."
 	
-	"""print "\t--loudness L \n\
-		(experimental)\n\
-		A parameter for the loudness of the transients.\n\
-		Only transients with peak amplitude larger than 'L' times\n\
-		the standard deviation in [-width:width] (centered on the\n\
-		transient's peak) are kept. (not used by default)."
-	"""
-
 
 def __check_options_and_args__():
 	"""
@@ -121,10 +113,7 @@ def __check_options_and_args__():
 	
 	global TIMING
 	TIMING = False
-	
-	global LOUDNESS_BOOL
-	LOUDNESS_BOOL = False
-	
+		
 	global ENERGY
 	ENERGY = False
 	global sampling_frequency
@@ -172,10 +161,6 @@ def __check_options_and_args__():
 				sampling_frequency = float(a)
 			elif o in ( '--energy' ):
 				ENERGY = True
-			elif o in ( '--loudness' ):
-				LOUDNESS_BOOL = True
-				global LOUDNESS
-				LOUDNESS = float(a)
 			else:
 				assert False, "Unknown option."
 	if not ( any( flag in o for flag in ['-w', '--width'] for o in opts ) 
@@ -187,7 +172,8 @@ def __check_options_and_args__():
 		sys.exit(1)
 	
 	
-	# This part sets some parameters defaults if these aren't supplied as arguments:
+	# This part sets some parameters defaults if these aren't supplied as
+	# arguments:
 	
 	if not CUSTOM_RSECONDS:
 		removed_seconds = 0.5
@@ -283,7 +269,7 @@ def print_parameters():
 		print "\t Output is pickled.\n"
 
 
-def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolution, data_name, spike_width, LOUDNESS=None):
+def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolution, data_name, spike_width):
 	'''
 		This function searches for the spikes in the data segments
 		and saves parameters for each found spike in the attributes of the
@@ -308,20 +294,11 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			Name of the file containing 'data'
 		- spike_width (integer)
 			Number of points at which the found transients should be sampled.
-		- Loudness
-			Only save transients in which the maximum amplitude divided by the standard
-			deviation of the transient is larger than the Loudness parameter 'LOUDNESS' (global variable).
-			Set to anything different from 'None' to activate.
 	Output:
 		- spikes (list)
 			A list fo Spike() class istances
 	'''
-	
-	if ( LOUDNESS != None):
-		LOUDNESS_BOOL = True
-	else:
-		LOUDNESS_BOOL = False
-	
+		
 	spikes = []
 	
 	"""fig = plt.figure()
@@ -345,12 +322,6 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	
-	"""# Use median_mean_average_energy() from data_conditioning.py to get an 
-	# "glitch-unbiased" estimate of the energy in each 'spike_width' long
-	# segment in the time series. This is used to estimate the SNR of the 
-	# glitch.
-	#average_energy = median_mean_average_energy(to_analyze, spike_width)
-	"""
 	for index, point in enumerate(to_analyze):
 		if (abs(point) > threshold):
 			if not HAS_SPIKE:
@@ -367,19 +338,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 		elif (index-max_spike_index > time_resolution) and HAS_SPIKE:
 			# We're now outside the search range for the spike: save the 
 			# current spike and start over.
-			
-			"""if ( LOUDNESS_BOOL ):
-				# This option is used with the --loudness parameter
-				# used to avoid noise based on the standard deviation 
-				# of "spike"
-				if ( max(spike)/np.std(spike) < LOUDNESS ):
-					# The spike doesn't match criteria: reset and keep searching
-					HAS_SPIKE = False
-					max_spike_value = 0
-					max__spike_index = 0
-					continue
-			"""
-			
+						
 			# Discard the glitch IF there's less than 2 points above threshold
 			if ( (last_spike_index-first_spike_index) < 2 ):
 				HAS_SPIKE = False
@@ -396,32 +355,29 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			spike = Spike(first_index, last_index,
 							max_index, max_spike_value,
 							peak_GPS, int(start), int(end),
-							waveform)
-			
-			### This is an old method use to compute the SNR
-			#spike.segment_average_energy = average_energy
-			#spike.average_energy = (np.array(spike.waveform)**2).sum()
-			#spike.SNR = spike.average_energy/spike.segment_average_energy
+							waveform, f_sampl)
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
 			#	SNR^2(f) = 2*|g(f)|^2/Pxx(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
-			# SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
-			# Since g(f) is symmetric around f
-			# When data is whitened Pxx should be a flat distribution equal 1
-			# all all frequencies, thus SNR^2(f) is simply the modulus squared 
+			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
+			# Since g(f) is symmetric around f 
+			# When data is whitened Pxx should have a flat distribution equal 1
+			# at all frequencies, thus SNR^2(f) is simply the modulus squared 
 			# of the Fourier transform. Remembering Parseval's theorem for 
-			# discrete signals:
-			#	\sum_i |g(t_i)|^2 = (1/N) \sum_k |g(f_k)|^2
+			# discrete signals with the FFT definitions used in 
+			# data_conditioning.py:
+			#	\sum_i |g(t_i)|^2 dt = dt^2 N \sum_k |g(f_k)|^2 df
 			# where the g(t_i) are the elements of the time series at discrete 
 			# points t_i and g(f_k) are the Fourier amplitudes at discrete 
-			# frequency f_k, N is the number of points in the time signal.
+			# frequency f_k, dt is the time step with N being the number of
+			# points in the time series.
 			# Thus, since we are really interested in \sum_k |g(f_k)|^2, 
 			# we can write the integrated SNR^2 in terms of components of the 
-			# time domain waveform as:
-			# SNR^2 = 4 * \sum_k |g(f_k)|^2 = N \sum_i |g(t_i)|^2
+			# time domain waveform using Parseval's Theorem:
+			# SNR^2 = 4 * \sum_k |g(f_k)|^2 = 4 dt^2 N \sum_i |g(t_i)|^2
 			
 			spike.SNR = np.sqrt(4 * spike.len*(np.array(spike.waveform)**2).sum())
 			# Save Spike object
@@ -430,6 +386,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			HAS_SPIKE = False
 			max_spike_value = 0
 			max_spike_index = 0
+			
 	return spikes
 
 def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed_seconds, f_sampl, normalization=None):
