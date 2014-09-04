@@ -62,6 +62,10 @@ PARALLEL_PROCESSES = 4
 # 15 results in 120 subplots in a single figure, which results in a segfault
 # most of the time.
 TRIANGLE_COMPONENTS = 12
+# Max number of principal components plotted in the principal comonent summary 
+# plot. (All the requested principal components will be plotted individually
+# in the Principal_components subfolder )
+MAX_ALL_PRINCIPAL_COMPONENTS = 20
 ####################################
 # Other parameters
 ####################################
@@ -1446,7 +1450,7 @@ def pipeline(args):
 					axs.append( fig.add_subplot(triangle_components, triangle_components, n) )
 					warnings.filterwarnings( "ignore", category=UserWarning )
 					axs[-1].set_title("Principal component {0} scores distribution".format(x))
-					axs[-1].hist(score_matrix[:,x-1], bins=np.sqrt(observations), log=True)
+					axs[-1].hist(score_matrix[:,x-1], bins=np.sqrt(observations), log=True, histtype="stepfilled", alpha=0.8)
 				else:
 					# Share axis with the plot above the current
 					if (n > triangle_components):
@@ -1499,11 +1503,12 @@ def pipeline(args):
 	
 	os.makedirs("Principal_components")
 	# Plot the first  plotted_components principal components:
-	for i in range(0, plotted_components):
-		fig = plt.figure(num=i, figsize=(12, 6), dpi=300)
+	for i in range(0, MAX_ALL_PRINCIPAL_COMPONENTS):
+		fig = plt.figure(figsize=(12, 6), dpi=100)
 		ax = fig.add_subplot(111)
 		
 		ax.grid(which="both")
+		
 		if ( "time" in ANALYSIS ):
 			time_axis = np.linspace(0, len(principal_components)/ANALYSIS_FREQUENCY, len(principal_components))
 			# Convert to ms
