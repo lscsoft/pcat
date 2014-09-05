@@ -549,8 +549,7 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 		if ("bands" in ANALYSIS):	
 			freq_array = np.linspace(low, high, waveform_len)
 		else:
-			#freq_array = rfftfreq( 2*(waveform_len-1), d=1./f_sampl )
-			freq_array, tmp = matplotlib.mlab.psd
+			freq_array = rfftfreq( 2*(waveform_len-1), d=1./f_sampl )
 		fig_all, ax_all = configure_subplot_freq(len(average_observation_matrix)+1)
 		if ("bands" in ANALYSIS):
 			for element in ax_all:
