@@ -144,6 +144,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
         else:
             arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format('--whiten' if (whitening[index] == "YES") else '', channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
         args.append(arg.split())
+    errors = 0
     for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
@@ -153,7 +154,10 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             error = traceback.format_exc()
             join(error.split("\n"), "</br>")
             print "Exception: {0}".format(error)
-            channel_processing_errors += "- Time Domain: error processing channel: {0}, error:</br>".format(channel_names[index])
+            if errors == 0:
+                channel_processing_errors += "<b>Time Domain</b>:</br>"
+                errors += 1
+            channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error)
             URL = "PROCESSINGERROR"
         results.append((channel_names[index], URL))
@@ -174,6 +178,7 @@ def run_PCAT_frequency(list_name, configuration):
         
         arg = "PCAT.py --silent --frequency --channel {0} --IFO {1} --frame {2} --list {3} --size {4} -v {5} --components {6} -m {7} --reconstruct".format(channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], variables_number[index], components_number[index], max_clusters[index])
         args.append(arg.split())
+    errors = 0
     for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
@@ -183,7 +188,10 @@ def run_PCAT_frequency(list_name, configuration):
             error = traceback.format_exc()
             join(error.split("\n"), "</br>")
             print "Exception: {0}".format(error)
-            channel_processing_errors += "- Frequency Domain: error processing channel: {0}, error:</br>".format(channel_names[index])
+            if errors == 0:
+                channel_processing_errors += "<b><Frequency Domain:</b></br>"
+                errors +=1
+            channel_processing_errors += "{1} - Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error)
             URL = "PROCESSINGERROR"
         results.append((channel_names[index], URL))
