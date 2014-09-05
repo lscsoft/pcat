@@ -22,8 +22,8 @@ transients found in LIGO/Advanced LIGO subsystems.
 
 PCAT is built on standard Python libraries, such as numpy, scipy, matplotlib.
 The scikit-learn module (http://scikit-learn.org/stable/, 
-http://pypi.python.org/pypi/scikit-learn/) is also required. gwpy
-(https://github.com/gwpy) is  also required when running PCAT_configread to
+http://pypi.python.org/pypi/scikit-learn/) is also required.
+gwpy (https://github.com/gwpy) is  also required when running PCAT_configread to
 retrieve locked segments. pylal is required for data retrieval (download_frames.py)
 
 *******************************************************************************
@@ -39,15 +39,14 @@ To add the PCAT folder to your path simply add the following lines in your
     EXPORT PATH=$PATH:/path/to/PCAT/
     EXPORT PYTHONPATH=$PYTHONPATH:/path/to/PCAT/
     eval `/ligotools/bin/use_ligotools`
-    
-Either source scikit-learn from an existing location:
-
-or install scikit-learn from scratch:
-    http://scikit-learn.org/stable/, 
-    http://pypi.python.org/pypi/scikit-learn/
-
+  
 gwpy also has to be sourced:
-    source ~detchar/opt/gwpysoft/etc/gwpy-user-env.sh 
+      source ~detchar/opt/gwpysoft/etc/gwpy-user-env.sh 
+    
+A scikit-learn installation is included in the gwpy user environment, but can
+also be downloaded from:
+    http://scikit-learn.org/stable/
+
 *******************************************************************************
 ***************************        Contents:        ***************************
 *******************************************************************************
