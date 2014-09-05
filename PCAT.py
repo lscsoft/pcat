@@ -1492,17 +1492,17 @@ def pipeline(args):
 		calculate_types(data_list, colored_clusters, score_matrix, principal_components, means, stds, labels, ANALYSIS, sampling)
 	
 	
-	plotted_components = components_number
+	plotted_components = MAX_ALL_PRINCIPAL_COMPONENTS
 	if ("time" in ANALYSIS):
-		fig_all, ax_all = configure_subplot_time(plotted_components)
+		fig_all, ax_all = configure_subplot_time(MAX_ALL_PRINCIPAL_COMPONENTS)
 	elif ("frequency" in ANALYSIS):
-		fig_all, ax_all = configure_subplot_freq(plotted_components)
+		fig_all, ax_all = configure_subplot_freq(MAX_ALL_PRINCIPAL_COMPONENTS)
 		for element in ax_all:
 			element.autoscale(True, axis="both", tight=True)
 	
 	
 	os.makedirs("Principal_components")
-	# Plot the first  plotted_components principal components:
+	# Plot the first  MAX_ALL_PRINCIPAL_COMPONENTS principal components:
 	for i in range(0, MAX_ALL_PRINCIPAL_COMPONENTS):
 		fig = plt.figure(figsize=(12, 6), dpi=100)
 		ax = fig.add_subplot(111)
