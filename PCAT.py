@@ -1396,8 +1396,19 @@ def pipeline(args):
 	explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
 	
 	
+	# If automatically chosing components update parameters dump to include
+	# number of PCs used when clustering	
 	if AUTOCHOOSE_COMPONENTS:
 		components_number = np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0))
+		with open("parameters.txt", "r") as f:
+			text = f.read()
+			print text
+			text = text.replace("PCA and GMM", "PCA and GMM\n\t\tPrincipal components used:\t{0}".format(components_number))
+			text = wtext.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
+			
+		with open("parameters.txt", "w") as f:
+			f.write(text)
+		
 	print "\n\tClustering using the first {0} principal components, accounting for {1:.1%} of the total variance".format(components_number, explained_variance[components_number])
 	print "\t  Maximum clusters: {0}".format(max_clusters)
 	
@@ -1562,7 +1573,7 @@ def pipeline(args):
 	f.write("#Start\t\tEnd\tDuration [s]\n")
 	for interval in times:
 		start_tmp, end_tmp = interval[0], interval[1]
-		f.write("{0}\t{1}\t{2}\n".format(start_tmp, end_tmp, end-start) )
+		f.write("{0}\t{1}\t{2}\n".format(start_tmp, end_tmp, end_tmp-start_tmp) )
 	f.write("Total analyzed time:\t{0:.1f} {1}".format(total/dividend, units))
 	f.close()
 	
