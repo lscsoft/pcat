@@ -75,16 +75,6 @@ BUTTERWORTH_ORDER = 4
 MAX_PLOTTED_COMPONENTS = 5
 
 
-# Boolean: apply High Pass filter
-global HIGH_PASS
-HIGH_PASS = True
-# Decide if data is resampled to ANALYSIS_FREQUENCY (if not supplied through
-# --resample, then it's set to 4096.0)
-global RESAMPLE
-RESAMPLE = True
-
-global SILENT
-SILENT = False
 ################################################################################
 # Default Values for parameters:
 ################################################################################
@@ -113,13 +103,6 @@ psd_overlap = 0.5
 # Maximum number of clusters found by GMM
 max_clusters = 10
 
-# Booleans 
-LIST = False
-CUSTOM_OUT = False
-FILTER = False
-WHITEN = False
-SAVE_TIMESERIES = False
-RECONSTRUCT = False
 
 
 # Load modules if help not requested or there are no arguments.
@@ -333,7 +316,8 @@ def __usage__():
 	
 def __check_options_and_args__(argv):
 	global components_number, psd_overlap, max_clusters, segment_size, download_overlap
-	global LIST, CUSTOM_OUT, FILTER , WHITEN, HIGH_PASS, HIGH_PASS_CUTOFF, SAVE_TIMESERIES
+	global LIST, CUSTOM_OUT, FILTER , WHITEN, HIGH_PASS, HIGH_PASS_CUTOFF, SAVE_TIMESERIES, NORESAMPLE, RESAMPLE
+	global HIGH_PASS
 	
 	global variables, channel, IFO, sampling
 	global frame_type, variables, normalization
@@ -342,14 +326,29 @@ def __check_options_and_args__(argv):
 	global ANALYSIS, ANALYSIS_FREQUENCY, CLEAN, RECONSTRUCT, NOPLOT, SILENT
 	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
 	
+	LIST = False
+	CUSTOM_OUT = False
+	FILTER = False
+	WHITEN = False
+	SAVE_TIMESERIES = False
+	RECONSTRUCT = False
 	components_number = 40
 	AUTOCHOOSE_COMPONENTS = False
 	
 	SILENT = False
 	NOPLOT = False
 	CLEAN = False
-	global NORESAMPLE
 	NORESAMPLE = False
+	# Boolean: apply High Pass filter
+
+	HIGH_PASS = True
+	
+	# Decide if data is resampled to ANALYSIS_FREQUENCY (if not supplied through
+	# --resample, then it's set to 4096.0 after the argument parsing, see below)
+	RESAMPLE = True
+	SILENT = False
+	# Booleans 
+	
 	
 	global start_time, end_time, times_list, times, total, download_overlap_seconds
 	global glitchgram_start, glitchgram_end
