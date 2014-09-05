@@ -1,8 +1,16 @@
 Things to implement/fix, in no particular order
 - Glitch classification confidence level, using the methods of sklearn.mixture.gmm
-- Switch the configurations files to .ini and use python ConfigParse
+- PCAT_configread: Switch the configurations files to .ini and use python ConfigParse
 - Find an authomatic method to choose the number of principal components used
     when clustering, the ideal would be finding the knee of the curve.
     This should me the point at which the curvature:
         K(x) = |f''(x)|/{1+[f'(x)]^2}^(3/2)
     has a maximum.
+- Change the colors (defined in utilites_PCAT.py) to one of matplotlib's colormap
+  and change all of the plotting routines in GMM.py (scatterplot(),
+  calculate_types() + ?are there more?).
+- PCAT.py: Wrap the part that plots the principal components into a single function to cleanup (also see below)
+- PCAT.py Change the way principal components are plotted, so that only MAX_ALL_PRINCIPAL_COMPONENTS
+  are plotted in the summary plot for principal components, but up to components_n components
+  are actually plotted in the Principal_Components folder.
+- GMM.py Check whether the latest version of scikit-learn includes better clustering/classifying routines, which can replace gaussian_mixture()
