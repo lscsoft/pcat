@@ -131,10 +131,10 @@ def load_database(data):
 	n_files = len(data)
 	if not SILENT:
 		bar = progressBar(minValue = 0, maxValue = n_files-1 if n_files > 1 else 1, totalWidth = frame_width/2 )
-		bar.__call__(0)
+		bar(0)
 	for index, element in enumerate(data):
 		if not SILENT:
-			bar.__call__(index)
+			bar(index)
 		f = open(element, "rb")
 		database.extend( pickle.load(f) )
 		f.close()
@@ -164,7 +164,7 @@ def load_fft(data, pickled):
 	database = list()
 	if not SILENT:
 		bar = progressBar( minValue = 0, maxValue = files_n-1 if files_n > 1 else 1, totalWidth = frame_width/2 )
-		bar.__call__(0)
+		bar(0)
 	for index, element in enumerate(data):
 		if pickled:
 			f = open(element, "rb")
@@ -188,7 +188,7 @@ def load_fft(data, pickled):
 		spike.waveform.extend(tmp)
 		database.append(spike)
 		if not SILENT:
-			bar.__call__(index)
+			bar(index)
 	print ""
 	return database
 
@@ -241,9 +241,9 @@ def load_list(data, pickled):
 	files_n = len(data)
 	if not SILENT:
 		bar = progressBar( minValue = 0, maxValue = files_n-1 if files_n > 1 else 1, totalWidth = frame_width/2 )
-		bar.__call__(0)
+		bar(0)
 	for index, element in enumerate(data):
-		bar.__call__(index)
+		bar(index)
 		if pickled:
 			f = open(element, "rb")
 			tmp = pickle.load(f)

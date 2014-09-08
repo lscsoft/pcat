@@ -64,7 +64,7 @@ def __main__():
 		print "No spikes in the selected file."
 		sys.exit(0)
 	bar = progressBar(minValue = 0, maxValue = maxValue-1, totalWidth = 50)
-	bar.__call__(0)
+	bar(0)
 	fig = plt.figure()
 	if sampling_frequency:
 		x_axis = [ i/sampling_frequency for i in range( 0, waveform_length ) ]
@@ -82,10 +82,10 @@ def __main__():
 			plt.xlim( ( 0, waveform_length ) )
 			ax.plot(spike.waveform/spike.norm)
 		fig.savefig(output+str(spike.peak_GPS)+".pdf")
-		bar.__call__(index)
+		bar(index)
 	plt.close('all')
 	if maxValue == 1:
-		bar.__call__(1)
+		bar(1)
 	print
 
 

@@ -117,7 +117,7 @@ def __main__():
 	input_data = load_data(args, pickled = PICKLED)
 	if ( n_files > 1 ):
 		bar = progressBar(minValue = 0, maxValue = n_files-1, totalWidth = 40 )
-		bar.__call__(0)
+		bar(0)
 	if PLOT:
 		import matplotlib
 		matplotlib.use('agg')
@@ -132,7 +132,7 @@ def __main__():
 		pickle.dump( PSD_estimate, f )
 		f.close()
 		if ( n_files > 1 ):
-			bar.__call__(index)
+			bar(index)
 
 
 if __name__ == '__main__':
