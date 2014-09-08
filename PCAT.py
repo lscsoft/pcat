@@ -1402,9 +1402,8 @@ def pipeline(args):
 		components_number = np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0))
 		with open("parameters.txt", "r") as f:
 			text = f.read()
-			print text
-			text = text.replace("PCA and GMM", "PCA and GMM\n\t\tPrincipal components used:\t{0}".format(components_number))
-			text = wtext.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
+			text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
+			text = text.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
 			
 		with open("parameters.txt", "w") as f:
 			f.write(text)
