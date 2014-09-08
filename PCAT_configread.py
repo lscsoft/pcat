@@ -280,8 +280,8 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
                 row += no_transients.format(URL_time.replace("no_transients.txt", "parameters.txt"))
             else:
                 row += result_columns_time.format(URL_time)
-        except KeyError:
-            # The given channel's key does not exist, so there are no results for that channel:
+        except:
+            # The given channel's key does not exist (or results does not exist), so there are no results for that channel:
             row += not_available_time
         
         # Setup frequency domain columns results
@@ -292,8 +292,8 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
                 row += not_available_frequency
             else:
                 row += result_columns_freq.format(URL_freq)
-        except KeyError:
-            # The given channel's key does not exist, so there are no results for that channel:
+        except:
+            # The given channel's key does not exist (or results does not exist), so there are no results for that channel:
             row += not_available_frequency
         
         # Close the current row and write to file:
