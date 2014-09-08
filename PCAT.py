@@ -1563,10 +1563,7 @@ def pipeline(args):
 	
 	print "\tSaved Principal components plots."
 
-	# Dump the database to a pickle file
-	pickle_dump(data_list, database_name)
-	print "\tSaved {0}".format(database_name)
-	
+
 	# Save information about the analyzed interval (intervals and total time)
 	f = open("Analyzed_interval.txt", "w")
 	f.write("#Start\t\tEnd\tDuration [s]\n")
@@ -1613,6 +1610,9 @@ def pipeline(args):
 			plot_psds(data_list, (score_matrix, principal_components, means, stds), components_number, labels, sampling, ANALYSIS, RECONSTRUCT, SILENT)
 	print ""
 	
+	# Dump the database to a pickle file
+	pickle_dump(data_list, database_name)
+	print "\tSaved {0}".format(database_name)
 	
 	# Analysis finished. Print output URL	
 	print "#"*int(0.8*frame_width)
