@@ -132,7 +132,6 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
     global opts, channel_processing_errors
     (channel_names, IFOs, frame_types, thresholds, variables_number, highpass_cutoff, whitening, downsample_freq, segment_size, components_number, max_clusters) = configuration
     args = []
-    results = []
     for index in range(len(channel_names)):
         # Example of typical args:
         # "PCAT.py --time --whiten --highpasscutoff 10 -t 4.0 --IFO L --frame
@@ -146,6 +145,8 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
         args.append(arg.split())
     errors = 0
+    # Results is a dict, its keys are the channel name, its values the URLs to results
+    results = {}
     for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
@@ -159,9 +160,8 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
                 errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error)
-            URL = "PROCESSINGERRORTIME"
-        results.append((channel_names[index], URL))
-
+            URL = "PROCESSINGERROR"
+        results[channel_names[index]] = URL
     
     return results
     
@@ -169,7 +169,6 @@ def run_PCAT_frequency(list_name, configuration):
     global channel_processing_errors
     (channel_names, IFOs, frame_types, variables_number, segment_size, components_number, max_clusters) = configuration
     args = []
-    results = []
     for index in range(len(channel_names)):
         # Example of typical args:
         # PCAT.py --frequency --size 10 --IFO L --frame L1_R
@@ -179,6 +178,8 @@ def run_PCAT_frequency(list_name, configuration):
         arg = "PCAT.py --silent --frequency --channel {0} --IFO {1} --frame {2} --list {3} --size {4} -v {5} --components {6} -m {7} --reconstruct".format(channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], variables_number[index], components_number[index], max_clusters[index])
         args.append(arg.split())
     errors = 0
+    # Results is a dict, its keys are the channel name, its values the URLs to results
+    results = {}
     for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
@@ -192,8 +193,8 @@ def run_PCAT_frequency(list_name, configuration):
                 errors +=1
             channel_processing_errors += "{1} - Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error)
-            URL = "PROCESSINGERRORFREQUENCY"
-        results.append((channel_names[index], URL))
+            URL = "PROCESSINGERROR"
+        results[channel_names[index]] = URL
     
     return results
 
@@ -214,6 +215,15 @@ def print_html_table(list_path, output_dir, results_time, results_frequency=None
     list_name = os.path.basename(list_path)
     output_file = open(output_dir + "/" + list_name + ".html", "w")
     
+    # Retrieve path to a list of the analyzed interval, it will be somewhere in the results
+    # (Figure out a better way to do this, since this lead to a non-existing URL if there's
+    # no results)
+    
+    try:
+        analyzed_interval = results_time[results_time.keys()[0]]+ "Analyzed_interval.txt"
+    except:
+        analyzed_interval = results_frequency[results_frequency.keys()[0]]+ "Analyzed_interval.txt"
+    
     print >>output_file, """<html>
     <head>
         <title>Summary - {0}</title>
@@ -231,47 +241,73 @@ def print_html_table(list_path, output_dir, results_time, results_frequency=None
         
         <br>
         <div align="center">  
-                <a href='{3}Analyzed_interval.txt'><img src="./img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
+                <a href='{3}'><img src="./img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
             </div>
             
         <br>
         <br>
     <table border="1" style="text-align: left; width: 1200; height: 67px; margin-left:auto; margin-right: auto; background-color: white;" b\
-order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), results_time[0][1])
+order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval)
     
-    if (results_frequency):
-        # Print table headers including frequency domain
-        print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
-        for index, results in enumerate(results_time):
-            if ("PROCESSINGERRORTIME" in results[1]) and "PROCESSINGERRORFREQUENCY" in results_frequency[index][1]:
-                 print >>output_file, "<tr><td>{0}</td><td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(results[0], results[1], results_frequency[index][1])
-                 continue
-            elif "PROCESSINGERRORTIME" in results[1]:
-                print >>output_file, "<tr><td>{0}</td><td align='right'>N/A<td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(*results)
-                continue
-            elif "PROCESSINGERRORFREQUENCY" in results_frequency[index][1]:
-                print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a></td><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td><td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(results[0], results[1], results_frequency[index][1])
-                continue
-            if (results[1]):
-                print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a></td><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td><td align='right'><a href='{2}'>Results</a></td><td align='right'><a href='{2}parameters.txt'>parameters</a></td></tr>".format(results[0], results[1], results_frequency[index][1])
-            else:
-                print >>output_file, "<tr><td>{0}</td><td align='right'>No glitches found</td><td align='right'> </td></td> <td align='right'><a href='{1}'>Results</a> (<a href='{1}parameters.txt'>parameters</a>)</td></tr>".format(results[0], results_frequency[index][1])    
-    else:
-        # Print only time domain headers
-        print >>output_file, "<tr><th>Channel name</td><th align='right'>Time Domain</th> <th align='right'>Glichgram</th><th align='right'>Time Domain parameters</th></tr>"
-        for index, results in enumerate(results_time):
-            if "PROCESSINGERRORTIME" in results[1]:
-                print >>output_file, "<tr><td>{0}</td><td align='right'>N/A<td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(*results)
-                continue
-            if (results[1]):
-                print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td></tr>".format(*results)    
-            else:
-                print >>output_file, "<tr><td>{0}</td><td align='right'>No glitches found</td><td align='right'> </td> <td align='right'> </td></tr>".format(results[0])
     
-    if (results_frequency):
-        configstring = """Configuration files: <a href="./misc/config_{0}_time.txt">time</a>, <a href="./misc/config_{0}_frequency.txt">frequency</a>""".format(list_name)
+    print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
+    
+    not_available_time = "<td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td>"
+    no_transients = "<td align='right'>N/A (No glitches found)</td><td align='right'>N/A</td><td align='right'><a href='{0}'>parameters</a></td"
+    not_available_frequency = "<td align='right'>N/A</td><td align='right'>N/A</td>"
+    
+    result_columns_time = "<td align='right'><a href='{0}'>Results</a></td><td align='right'><a href='{0}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{0}parameters.txt'>parameters</a></td>"
+    result_columns_freq = "<td align='right'><a href='{0}'>Results</a></td><td align='right'><a href='{0}parameters.txt'>parameters</a></td>"
+    
+    all_channels = np.unique(results_time.keys() + results_frequency.keys())
+    for channel in all_channels:
+        row = "<tr><td>{0}</td>".format(channel)
+        
+        # Setup time domain columns results
+        try:
+            URL_time = results_time[channel]
+            # If processing error or URL_time is empty (no glitches), then there are no results:
+            if ("PROCESSINGERROR" in URL_time):
+                row += not_available_time
+            elif ("no_transients.txt" in URL_time):
+                row += no_transients.format(URL_time.replace("no_transients.txt", "parameters.txt"))
+            else:
+                row += result_columns_time.format(URL_time)
+        except KeyError:
+            # The given channel's key does not exist, so there are no results for that channel:
+            row += not_available_time
+        
+        # Setup frequency domain columns results
+        try:
+            URL_freq = results_frequency[channel]
+            # If processing error or URL_freq is empty, then there are no results:
+            if ("PROCESSINGERROR" in URL_freq) or not URL_freq:
+                row += not_available_frequency
+            else:
+                row += result_columns_freq.format(URL_freq)
+        except KeyError:
+            # The given channel's key does not exist, so there are no results for that channel:
+            row += not_available_frequency
+        
+        # Close the current row and write to file:
+        row += "</tr>"
+        print >>output_file, row
+    
+    
+    # Final touch: add configuration files, original command, error list, then close html file tags
+    config_time = "./misc/config_{0}_time.txt".format(list_name)
+    config_frequency = "./misc/config_{0}_frequency.txt".format(list_name)
+    
+    configstring = "Configuration files: "
+    if not (os.path.exists(config_time)):
+        configstring += "Time Domain N/A"
     else:
-        configstring = """<a href="./misc/config_{0}_time.txt">Configuration file</a>""".format(list_name)
+        configstring += "<a href='{0}'>Time Domain</a>".format(config_time)
+    configstring += ", "
+    if not (os.path.exists(config_frequency)):
+        configstring += "Frequency Domain N/A"
+    else:
+        configstring += "<a href='{0}'>Frequency Domain</a>".format(config_frequency)
     
     global original_command
     original_command_string = join(original_command, " ")
@@ -292,6 +328,7 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     {3}
     </body></html>""".format("</br>"*(len(results_time)+5), configstring, original_command, error_list)
     
+    # Close file
     output_file.close()
 
 
