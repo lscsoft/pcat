@@ -305,12 +305,12 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     config_frequency = "./misc/config_{0}_frequency.txt".format(list_name)
     
     configstring = "Configuration files: "
-    if not (os.path.exists(config_time)):
+    if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
         configstring += "<a href='{0}'>Time Domain</a>".format(config_time)
     configstring += ", "
-    if not (os.path.exists(config_frequency)):
+    if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
         configstring += "<a href='{0}'>Frequency Domain</a>".format(config_frequency)
