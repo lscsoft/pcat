@@ -1,6 +1,8 @@
 Things to implement/fix, in no particular order
 - Glitch classification confidence level, using the methods of sklearn.mixture.gmm
 - PCAT_configread: Switch the configurations files to .ini and use python ConfigParse
+- PCAT_configread: Include a default configuration and a fallback to default when the supplied
+ configuration file does not exist (plus error if the configuration file is malformed)
 - Find an authomatic method to choose the number of principal components used
     when clustering, the ideal would be finding the knee of the curve.
     This should me the point at which the curvature:
@@ -14,3 +16,5 @@ Things to implement/fix, in no particular order
   are plotted in the summary plot for principal components, but up to components_n components
   are actually plotted in the Principal_Components folder.
 - GMM.py Check whether the latest version of scikit-learn includes better clustering/classifying routines, which can replace gaussian_mixture()
+- Rewrite PCAT.py parses to use argparse
+- utilities_PCAT: glitchgram() make the title of the title of the first glitchgram clickable (linking to the loudest glitch's time series)
