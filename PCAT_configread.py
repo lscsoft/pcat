@@ -427,8 +427,6 @@ def main():
     user_name = os.path.expanduser("~").split("/")[-1]
     output_dir = os.path.expanduser("/home/"+user_name+"/public_html/PCAT_cron")
     
-    # Call grid-proxy-init to initialize the robot cert
-    subprocess.call(["grid-proxy-init"])
     
     try:
         os.makedirs(output_dir)
@@ -471,7 +469,14 @@ def main():
         FLAG = "H1:DMT-SCIENCE"
         
     if not opts.list:
-        locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
+        try:
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
+        except:
+            print "Failed to retrieve locked segments, make sure your proxy certificate is loaded, by running"
+            print "ligo-proxy-init albert.einstein"
+            print "Replacing albert.eistein with your LIGO credentials"
+            exit()
+        
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
