@@ -51,6 +51,7 @@ def parse_commandline():
     parser.add_option("-t", "--time", help="Time Domain configuration file, optional, defaults to " + default_time_config, default=default_time_config)
     parser.add_option("-f", "--frequency", help="Frequency Domain configuration file, optional, defaults to " + default_frequency_config, default=default_frequency_config)
     parser.add_option("-n", "--name", help="Name for output file (if using -s and -e)", default=None)
+    parser.add_option("--IFO", help="Interferometer to use, 'H' for Hanford, 'L' for Livingston.", default=None)
     opts, args = parser.parse_args()
 
     return opts
@@ -438,6 +439,9 @@ def main():
         print "Either a list of times or start and end GPS times have to be supplied."
         print "Re-run with -h for usage."
         exit()
+    if not (opts.IFO):
+        print "IFO ('L' or 'H') has to be supplied. Quitting."
+        exit()
     
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
@@ -461,19 +465,13 @@ def main():
         f.close()
         del tmp
     
+    if opts.IFO == 'L':
+        FLAG = "L1:DMT-SCIENCE"
+    else:
+        FLAG = "H1:DMT-SCIENCE"
+        
     if not opts.list:
-        if (start_time < 1091836816):
-            FLAG_1 = "L1:DMT-XARM_LOCK:1"
-            FLAG_2 = "L1:DMT-YARM_LOCK:1"
-            FLAG_3 = "L1:DMT-PRC_LOCK:1"
-            # Get locked segments for each the three above flags:
-            print "Retrieving locked segments..."
-            locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
-            locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
-        else:
-            FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
-            
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
+        locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
