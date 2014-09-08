@@ -19,8 +19,9 @@ import sys
 
 import getopt
 
-import pylal.frutils
 from glue import lal
+import pylal.frutils
+
 
 from utilities_PCAT import progressBar
 
