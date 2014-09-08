@@ -9,19 +9,20 @@ The Spike class is used to store the information about a spike, such as amplitud
 	spike=Spike()
 	
 	For time domain analysis the attributes are:
-		spike.start			->	Starting point
-		spike.end			->	Ending point
-		spike.peak			->	Peak point
-		spike.norm			->	Normalization constant
-		spike.width			->	Width (seconds)
-		spike.waveform		->	Waveform
-		spike.segment_start	->	Segment start in GPS time
-		spike.segment_end	->	Segment end in GPS time
-		spike.peak_GPS		->	Peak in GPS time
-		spike.sampling		->	Sampling Frequency
-		spike.SNR			->	SNR
-		spike.type			->	Type
-		spike.peak_frequency->	Peak frequency
+		spike.start				->	Starting point
+		spike.end				->	Ending point
+		spike.peak				->	Peak point
+		spike.norm				->	Normalization constant
+		spike.duration			->	Duration (in s)
+		spike.waveform			->	Waveform
+		spike.segment_start		->	Segment start in GPS time
+		spike.segment_end		->	Segment end in GPS time
+		spike.peak_GPS			->	Peak in GPS time
+		spike.sampling			->	Sampling Frequency
+		spike.SNR				->	SNR
+		spike.type				->	Type
+		spike.peak_frequency	->	Peak frequency
+		spike.central_freq		->	Central Frequency
 	
 	For frequency domain analysis:
 		spike.segment_start	->	Segment start in GPS time
@@ -53,8 +54,8 @@ class Spike:
 		self.waveform = waveform
 		self.len = len(self.waveform)
 		self.sampling = sampling_frequency
-		self.duration = self.width/self.sampling
-			
+		self.duration = (end-start)*sampling_frequency
+        
 	def __str__(self):
 		'''
 		String reprentation of the spike (segment_start, segment_end, spike_start, 
