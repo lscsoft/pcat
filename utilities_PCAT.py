@@ -399,7 +399,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	start_time and end_time are the earliest and the latest GPS times
 	
 	"""
-	DPI = 300
+	DPI = 100
 	fig = plt.figure(figsize=(12,3*6), dpi=DPI)
 	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
 	ax = fig.add_subplot(311, axisbg="gray", alpha=0.05)
@@ -503,7 +503,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			
 		
 		locked_times_plots3.append(matplotlib.collections.BrokenBarHCollection.span_where(
-			interval, ymin=1, ymax=1.5*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
+			interval, ymin=0, ymax=10*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
 		
 		
 		
@@ -674,7 +674,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	fmts1 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords1, info_list) ]	
 	fmts2 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords2, info_list) ]	
 	
-	fig.savefig("Glitchgram.png") # bbox_inches='tight', dpi=fig.get_dpi())
+	fig.savefig("Glitchgram.png", dpi=fig.get_dpi()) # bbox_inches='tight', 
 	print "\tSaved: Glitchgram.html"
 	plt.close('all')
 	
