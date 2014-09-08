@@ -139,10 +139,11 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
         #   L1_R -c L1:LSC-DARM_IN1_DQ --list summary_24-July-2014
         #   --reconstruct --components 10 -m 6"
         
+        whiten = '--whiten' if (whitening[index] == "YES") else ''
         if opts.start and opts.end:
-            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format('--whiten' if (whitening[index] == "YES") else '', channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
+            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
         else:
-            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format('--whiten' if (whitening[index] == "YES") else '', channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
+            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
         args.append(arg.split())
     errors = 0
     for index, configuration in enumerate(args):
@@ -151,15 +152,14 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc()
-            join(error.split("\n"), "</br>")
+            error = traceback.format_exc().replace("\n", "</br>")
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b>Time Domain</b>:</br>"
                 errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error)
-            URL = "PROCESSINGERROR"
+            URL = "PROCESSINGERRORTIME"
         results.append((channel_names[index], URL))
 
     
@@ -185,15 +185,14 @@ def run_PCAT_frequency(list_name, configuration):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc()
-            join(error.split("\n"), "</br>")
+            error = traceback.format_exc().replace("\n", "</br>")
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
                 errors +=1
             channel_processing_errors += "{1} - Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error)
-            URL = "PROCESSINGERROR"
+            URL = "PROCESSINGERRORFREQUENCY"
         results.append((channel_names[index], URL))
     
     return results
@@ -244,6 +243,15 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
         # Print table headers including frequency domain
         print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
         for index, results in enumerate(results_time):
+            if ("PROCESSINGERRORTIME" in results[1]) and "PROCESSINGERRORFREQUENCY" in results_frequency[index][1]:
+                 print >>output_file, "<tr><td>{0}</td><td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(results[0], results[1], results_frequency[index][1])
+                 continue
+            elif "PROCESSINGERRORTIME" in results[1]:
+                print >>output_file, "<tr><td>{0}</td><td align='right'>N/A<td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(*results)
+                continue
+            elif "PROCESSINGERRORFREQUENCY" in results_frequency[index][1]:
+                print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a></td><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td><td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(results[0], results[1], results_frequency[index][1])
+                continue
             if (results[1]):
                 print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a></td><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td><td align='right'><a href='{2}'>Results</a></td><td align='right'><a href='{2}parameters.txt'>parameters</a></td></tr>".format(results[0], results[1], results_frequency[index][1])
             else:
@@ -252,6 +260,9 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
         # Print only time domain headers
         print >>output_file, "<tr><th>Channel name</td><th align='right'>Time Domain</th> <th align='right'>Glichgram</th><th align='right'>Time Domain parameters</th></tr>"
         for index, results in enumerate(results_time):
+            if "PROCESSINGERRORTIME" in results[1]:
+                print >>output_file, "<tr><td>{0}</td><td align='right'>N/A<td align='right'>N/A</td><td align='right'>N/A</td></tr>".format(*results)
+                continue
             if (results[1]):
                 print >>output_file, "<tr><td>{0}</td><td align='right'><a href='{1}'>Results</a><td align='right'><a href='{1}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{1}parameters.txt'>parameters</a></td></tr>".format(*results)    
             else:
