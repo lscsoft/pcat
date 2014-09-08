@@ -599,6 +599,10 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent) )
 					ax_all[-1].plot( freq_array, np.power(10, element), markers_and_colors[index][1]+marker, linewidth=0.4)
+					ax_all[index].autoscale(enable=True, axis="y", tight=True)
+					ax_all[index].autoscale(enable=False, axis="x")
+					ax_all[index].set_xlim((10, freq_array[-1]))
+					ax_all[index].axis("tight")
 				elif ("bands" in ANALYSIS):
 					ax.plot(freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
@@ -609,8 +613,8 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				# Change marker: there only are 7 colors
 				if (index > 5) and (marker == "-"):
 					marker = "-."
-				ax.autoscale(True, "both", tight=True)
-				ax_all[index].axis("tight")
+				#ax.autoscale(True, "both", tight=True)
+				
 			elif ( "time" in ANALYSIS ):
 				fig, ax = set_axes_time(time_axis)
 				ax.plot(time_axis, element, 'b-', linewidth = 0.4 )
@@ -653,7 +657,9 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			ax_all[-1].set_xticks( np.logspace(np.log10(low), np.log10(high), num=10) )
 			ax_all[-1].set_xticklabels([ "%.2f" % el for el in ax.get_xticks()])
 		elif ("frequency" in ANALYSIS):
-			ax_all[0].set_xbound( lower=10, upper=np.max(freq_array) )
+			#ax_all[0].set_xbound( lower=10, upper=np.max(freq_array) )
+			ax_all[-1].autoscale(enable=False, axis="x")
+			ax_all[-1].set_xlim((10, freq_array[-1]))
 			ax_all[-1].axis("tight")
 		box = ax_all[-1].get_position()
 		ax_all[-1].set_position([box.x0, box.y0, box.width * 0.8, box.height])
