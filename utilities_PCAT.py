@@ -457,9 +457,10 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			pass
 		
 		#tmp = np.sum(PSD*freqs)
-		#central_freq = (np.sum(PSD*freqs))/PSD.sum()
+		central_freq = (np.sum(PSD*freqs))/PSD.sum()
 		peak_frequency = freqs[np.argmax(PSD)]
 		spike.peak_frequency = peak_frequency
+		spike.central_freq = central_freq
 		#y_axis.append(central_freq)
 		peak_frequencies.append(peak_frequency)
 		SNRs.append(spike.SNR)
