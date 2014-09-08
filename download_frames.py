@@ -217,7 +217,11 @@ def retrieve_timeseries(start_time, end_time, channel_name, IFO, frame_type):
 				@ 'fs' sampling frequency (float)
 				@'dt' sampling period, 1/fs (float)
 	"""
-	d = pylal.frutils.AutoqueryingFrameCache(frametype=frame_type, scratchdir=None)
+	
+	with open("/home/jlmciver/public_html/ETG_performance/ETG_test_MDCs.cache") as cachefile:
+		cache = lal.Cache.fromfile(cachefile)
+	d = pylal.frutils.FrameCache(cache)
+	
 	data = d.fetch(channel_name, start_time, end_time)
 	
 	time_series = {
