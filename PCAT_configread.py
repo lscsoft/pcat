@@ -199,7 +199,7 @@ def run_PCAT_frequency(list_name, configuration):
     
     return results
 
-def print_html_table(list_path, output_dir, results_time, results_frequency=None):
+def print_html_table(list_path, output_dir, results_time=None, results_frequency=None):
     global channel_processing_errors
     try:
         os.makedirs( output_dir )
@@ -260,7 +260,13 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     result_columns_time = "<td align='right'><a href='{0}'>Results</a></td><td align='right'><a href='{0}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{0}parameters.txt'>parameters</a></td>"
     result_columns_freq = "<td align='right'><a href='{0}'>Results</a></td><td align='right'><a href='{0}parameters.txt'>parameters</a></td>"
     
-    all_channels = np.unique(results_time.keys() + results_frequency.keys())
+    if results_frequency and results_time:
+        all_channels = np.unique(results_time.keys() + results_frequency.keys())
+    elif results_time:
+        all_channels = np.unique(results_time.keys())
+    elif results_frequency:
+        all_channels = np.unique(results_frequency.keys())
+    
     for channel in all_channels:
         row = "<tr><td>{0}</td>".format(channel)
         
