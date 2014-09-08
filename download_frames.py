@@ -20,6 +20,7 @@ import sys
 import getopt
 
 import pylal.frutils
+from glue import lal
 
 from utilities_PCAT import progressBar
 
