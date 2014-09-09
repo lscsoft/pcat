@@ -1073,7 +1073,7 @@ def pipeline(args):
 						time_series = retrieve_timeseries(start, end, channel, IFO, frame_type)
 					except Exception, error:
 						log = open(log_name, "a")
-						log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}".format(start, end, str(error)))
+						log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}\n".format(start, end, str(error)))
 						log.close()
 						return []
 					conditioned = conditioning_function(time_series)
@@ -1086,7 +1086,7 @@ def pipeline(args):
 					time_series = retrieve_timeseries(start, end, channel, IFO, frame_type)
 				except Exception, error:
 					log = open(log_name, "a")
-					log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}".format(start, end, str(error)))
+					log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}\n".format(start, end, str(error)))
 					log.close()
 					return []
 				
