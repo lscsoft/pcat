@@ -1,3 +1,5 @@
+<<<<<<< Local Changes
+<<<<<<< Local Changes
 #!/usr/bin/env python
 # encoding: utf-8
 # Daniele Trifirò
@@ -147,7 +149,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
     results = {}
-    for index, configuration in enumerate(args):
+    for index, configuration in enumerate(args):git l
         print "Processing {0}...".format(channel_names[index])
         try:
             URL = PCAT.pipeline(configuration)
@@ -536,3 +538,7 @@ def main():
     
 if __name__ == '__main__':
     main()
+=======
+>>>>>>> External Changes
+=======
+>>>>>>> External Changes
