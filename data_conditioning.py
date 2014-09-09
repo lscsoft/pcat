@@ -386,6 +386,8 @@ def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True,
 	# The returned whitened time series normalization and units depend on the 
 	# choice of the whitened coefficients, see the above definition for the 
 	# coefficients.
+	
+	#NORMALIZATION VERIFIED 8 Sep 2014
 	return whitened_time_series
 
 
