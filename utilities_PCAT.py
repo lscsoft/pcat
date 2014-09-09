@@ -403,8 +403,8 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	fig = plt.figure(figsize=(12,3*6), dpi=DPI)
 	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
 	ax = fig.add_subplot(311, axisbg="gray", alpha=0.05)
-	ax3 = fig.add_subplot(313, alpha=0.05, axisbg="gray")
 	ax2 = fig.add_subplot(312, axisbg="gray", alpha=0.05)
+	ax3 = fig.add_subplot(313)#, axisbg="gray", alpha=0.05)
 	ax.set_xlabel("Time since GPS time {0}".format(start_time))
 	ax.set_ylabel("Frequency [Hz]")
 	ax.set_yscale('log')
@@ -455,9 +455,9 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	x_ticks = [start_time]
 	x_ticks_labels = ["0"]
 	interval = end_time-start_time
-	step = (interval)//15
+	step = (interval)//16
 	
-	range_end = end_time-step
+	range_end = end_time
 	for i in range(start_time+step, range_end, step):
 		x_ticks.append(i)
 		x_ticks_labels.append(tformat(i))
@@ -483,15 +483,16 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		locked_times_plots2.append(matplotlib.collections.BrokenBarHCollection.span_where(
 			interval, ymin=highpass_cutoff, ymax=f_sampl, where=np.array(peak_frequencies)>0, facecolor='#FFFFFF', alpha=1))
 			
-		
+		"""
 		locked_times_plots3.append(matplotlib.collections.BrokenBarHCollection.span_where(
-			interval, ymin=0.0, ymax=10.*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
-		
+			interval, ymin=0.0, ymax=10.0*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
+		"""
 		
 		
 		ax.add_collection(locked_times_plots[-1])
-		ax3.add_collection(locked_times_plots3[-1])
 		ax2.add_collection(locked_times_plots2[-1])
+		#ax3.add_collection(locked_times_plots3[-1])
+		
 	
 	
 	# Setup the third plot, the Glitch SNR Distribution
@@ -521,7 +522,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		y_lim_min = 1
 	else:
 		y_lim_min = np.min(SNRs)
-	ax3.set_ylim( (y_lim_min, np.max(SNRs)*1.5) )
+	ax3.set_ylim( (y_lim_min, np.max(SNRs)*10) )
 	ax3.set_xticks(x_ticks)
 	plt.xticks(x_ticks, x_ticks_labels, fontsize=12)
 	ax3.set_ylabel("SNR")	
