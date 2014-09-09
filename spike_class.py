@@ -23,6 +23,11 @@ The Spike class is used to store the information about a spike, such as amplitud
 		spike.type				->	Type
 		spike.peak_frequency	->	Peak frequency
 		spike.central_freq		->	Central Frequency
+		spike.fft				->	Fourier Transform of the glitch (dimensional)
+		spike.psd				->	Power Spectral Density (PSD) of the glitch (np.abs(fft)**2)
+		spike.fft_freq			->	Fourier Transform frequencies
+		spike.segment_psd		->	PSD of the (whitened) segment from which the glitch was extracted.
+		
 	
 	For frequency domain analysis:
 		spike.segment_start	->	Segment start in GPS time
