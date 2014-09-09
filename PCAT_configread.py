@@ -253,7 +253,7 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
     
     not_available_time = "<td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td>"
-    no_transients = "<td align='right'>N/A (No glitches found)</td><td align='right'>N/A</td><td align='right'><a href='{0}'>parameters</a></td"
+    no_transients = "<td align='right'>No glitches found</td><td align='right'>N/A</td><td align='right'><a href='{0}'>parameters</a></td>"
     not_available_frequency = "<td align='right'>N/A</td><td align='right'>N/A</td>"
     
     result_columns_time = "<td align='right'><a href='{0}'>Results</a></td><td align='right'><a href='{0}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{0}parameters.txt'>parameters</a></td>"
