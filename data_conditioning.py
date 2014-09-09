@@ -381,7 +381,7 @@ def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True,
 	# transformed time series spectrum where each fequency bin is
 	# weighted by the computed coefficients
 	# Multiply by delta_f to obtain the correctly normalized result. 
-	whitened_time_series = np.real( delta_f * np.fft.irfft(transform*coefficients) )
+	whitened_time_series = np.real( 2 * delta_f * np.fft.irfft(transform*coefficients) )
 	
 	# The returned whitened time series normalization and units depend on the 
 	# choice of the whitened coefficients, see the above definition for the 
@@ -508,6 +508,8 @@ def median_mean_average_psd(time_series, segment_length, f_sampl):
 		Pxx = np.abs( delta_t * np.fft.rfft(to_transform*window) )**2
 		# Apply correct normalization (from FINDCHIRP paper)
 		Pxx *= ( ( 2.0 * delta_f )/(window_normalization) ) 
+		# Fix normalization in the DC bin
+		Pxx[0] /= 2.0
 		
 		# Units are now counts^2 Hz^-1
 		
@@ -538,11 +540,7 @@ def median_mean_average_psd(time_series, segment_length, f_sampl):
 		PSD_estimate = even_psd_median*even_weight + odd_psd_median*odd_weight
 		PSD_estimate /= float( Ns_even + Ns_odd)
 	
-	# Matlab BUG
-	#PSD_estimate[0] *= 2.0
-	#PSD_estimate[-1] *= 2.0
-	#######################
-	
+
 	return freqs, PSD_estimate
 
 def median_mean_average_energy(time_series, step):
