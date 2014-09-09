@@ -504,7 +504,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			
 		
 		locked_times_plots3.append(matplotlib.collections.BrokenBarHCollection.span_where(
-			interval, ymin=0, ymax=10*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
+			interval, ymin=0.0, ymax=10.*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
 		
 		
 		
@@ -535,7 +535,12 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax3.autoscale(True, axis="x", tight=True)
 	ax3.set_yscale('log')
 	ax3.autoscale(True, axis="y", tight=True)
-	#ax3.set_ylim( (1., np.max(SNRs)) )
+	
+	if (np.min(SNRs) >= 1 ):
+		y_lim_min = 1
+	else:
+		y_lim_min = np.min(SNRs)
+	ax3.set_ylim( (y_lim_min, np.max(SNRs)*1.5) )
 	ax3.set_xticks(x_ticks)
 	plt.xticks(x_ticks, x_ticks_labels, fontsize=12)
 	ax3.set_ylabel("SNR")	
