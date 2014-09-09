@@ -147,7 +147,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
     results = {}
-    for index, configuration in enumerate(args):git l
+    for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
             URL = PCAT.pipeline(configuration)
