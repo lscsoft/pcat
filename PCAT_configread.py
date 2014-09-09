@@ -1,5 +1,3 @@
-<<<<<<< Local Changes
-<<<<<<< Local Changes
 #!/usr/bin/env python
 # encoding: utf-8
 # Daniele Trifirò
@@ -538,7 +536,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-=======
->>>>>>> External Changes
-=======
->>>>>>> External Changes
