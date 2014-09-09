@@ -367,7 +367,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
 			# Since g(f) is symmetric around f  (time series is real)/
 			
-			spike_psd = np.abs(delta_t*np.fft.rfft(spike.waveform))**2)
+			spike_psd = np.abs(delta_t*np.fft.rfft(spike.waveform))**2
 			spike.SNR = np.sqrt(4.0 * f_sampl/float(spike_width) * (spike_psd/psd).sum() )
 			# Save Spike object
 			spikes.append(spike)
