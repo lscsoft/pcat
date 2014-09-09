@@ -433,35 +433,16 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	
 	glitch_number = len(data)
 	
-	# Choose NFFT to have a frequency resolution of 1 Hz or better
-	if (data[0].waveform.size < f_sampl):
-		psd_worker = lambda x: matplotlib.mlab.psd( x, Fs=f_sampl, NFFT=x.size, noverlap=int(0.5*x.size), pad_to=int(f_sampl) )
-	else:
-		psd_worker = lambda x: matplotlib.mlab.psd( x, Fs=f_sampl, NFFT=int(f_sampl), noverlap=int(0.5*f_sampl) )
-	
 	for index, spike in enumerate(data):
 		time_axis.append(spike.peak_GPS)
 		
-		(PSD, freqs) =  psd_worker(spike.waveform)
-		
-		# The following is a fix for mlab.psd's weird behaviour:
-		# when NFFT is the same size as the input waveform the returned Pxx
-		# is a matrix, with shape is a len(input_waveform)x1, when NFFT is less
-		# than len(input_waveform) one has no problem.
-		# By enclosing PSD = PSD[:,0] into a try, this fixes the problem when
-		# it happens (when one has a matrix) and leaves things unchanged when
-		# this does not happen (when one as a vector, as it should be)
-		try:
-			PSD = PSD[:,0]
-		except:
-			pass
-		
-		#tmp = np.sum(PSD*freqs)
+		(PSD, freqs) =  spike.psd, spike.fft_freq
+	
 		central_freq = (np.sum(PSD*freqs))/PSD.sum()
 		peak_frequency = freqs[np.argmax(PSD)]
 		spike.peak_frequency = peak_frequency
 		spike.central_freq = central_freq
-		#y_axis.append(central_freq)
+		
 		peak_frequencies.append(peak_frequency)
 		SNRs.append(spike.SNR)
 		
@@ -504,7 +485,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			
 		
 		locked_times_plots3.append(matplotlib.collections.BrokenBarHCollection.span_where(
-			interval, ymin=0, ymax=10*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
+			interval, ymin=0.0, ymax=10.*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
 		
 		
 		
@@ -535,7 +516,12 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax3.autoscale(True, axis="x", tight=True)
 	ax3.set_yscale('log')
 	ax3.autoscale(True, axis="y", tight=True)
-	#ax3.set_ylim( (1., np.max(SNRs)) )
+	
+	if (np.min(SNRs) >= 1 ):
+		y_lim_min = 1
+	else:
+		y_lim_min = np.min(SNRs)
+	ax3.set_ylim( (y_lim_min, np.max(SNRs)*1.5) )
 	ax3.set_xticks(x_ticks)
 	plt.xticks(x_ticks, x_ticks_labels, fontsize=12)
 	ax3.set_ylabel("SNR")	
