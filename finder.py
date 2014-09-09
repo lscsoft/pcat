@@ -19,7 +19,7 @@ from numpy import linalg
 
 from utilities_PCAT import *
 
-from data_conditioning import median_mean_average_energy
+from data_conditioning import median_mean_average_psd
 
 def __usage__():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
@@ -322,6 +322,10 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	
+	freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
+	
+	delta_t = 1.0/f_sampl
+	
 	for index, point in enumerate(to_analyze):
 		if (abs(point) > threshold):
 			if not HAS_SPIKE:
@@ -358,28 +362,19 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 							waveform, f_sampl)
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
-			#	SNR^2(f) = 2*|g(f)|^2/Pxx(f)
+			#	SNR^2(f) = |g(f)|^2/Pxx(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
-			# Since g(f) is symmetric around f 
-			# When data is whitened Pxx should have a flat distribution equal 1
-			# at all frequencies, thus SNR^2(f) is simply the modulus squared 
-			# of the Fourier transform. Remembering Parseval's theorem for 
-			# discrete signals with the FFT definitions used in 
-			# data_conditioning.py:
-			#	\sum_i |g(t_i)|^2 dt = dt^2 N \sum_k |g(f_k)|^2 df
-			# where the g(t_i) are the elements of the time series at discrete 
-			# points t_i and g(f_k) are the Fourier amplitudes at discrete 
-			# frequency f_k, dt is the time step with N being the number of
-			# points in the time series.
-			# Thus, since we are really interested in \sum_k |g(f_k)|^2, 
-			# we can write the integrated SNR^2 in terms of components of the 
-			# time domain waveform using Parseval's Theorem:
-			# SNR^2 = 4 * \sum_k |g(f_k)|^2 = 4 dt^2 N \sum_i |g(t_i)|^2
+			# Since g(f) is symmetric around f  (time series is real).
 			
-			spike.SNR = np.sqrt(4 * spike.len*(np.array(spike.waveform)**2).sum())
+			spike.fft = delta_t*np.fft.rfft(spike.waveform)
+			spike.fft_freq = freqs
+			spike.psd = np.abs(spike.fft)**2
+			spike.segment_psd = psd
+			
+			spike.SNR = np.sqrt(4.0 * f_sampl/float(spike_width) * (spike.psd/psd).sum() )
 			# Save Spike object
 			spikes.append(spike)
 			
