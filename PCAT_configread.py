@@ -1,5 +1,3 @@
-<<<<<<< Local Changes
-<<<<<<< Local Changes
 #!/usr/bin/env python
 # encoding: utf-8
 # Daniele Trifirò
@@ -53,6 +51,7 @@ def parse_commandline():
     parser.add_option("-t", "--time", help="Time Domain configuration file, optional, defaults to " + default_time_config, default=default_time_config)
     parser.add_option("-f", "--frequency", help="Frequency Domain configuration file, optional, defaults to " + default_frequency_config, default=default_frequency_config)
     parser.add_option("-n", "--name", help="Name for output file (if using -s and -e)", default=None)
+    parser.add_option("--IFO", help="Interferometer to use, 'H' for Hanford, 'L' for Livingston.", default=None)
     opts, args = parser.parse_args()
 
     return opts
@@ -155,13 +154,13 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
-                channel_processing_errors += "<b>Time Domain</b>:</br>"
+                channel_processing_errors += "<b>Time Domain</b>: </br>"
             errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
-            channel_processing_errors += "\t{0}</br>".format(error)
+            channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
             URL = "PROCESSINGERROR"
         results[channel_names[index]] = URL
     
@@ -194,7 +193,7 @@ def run_PCAT_frequency(list_name, configuration):
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
             errors +=1
             channel_processing_errors += "{1} - Channel name: {0}, error:</br>".format(channel_names[index], errors)
-            channel_processing_errors += "\t{0}</br>".format(error)
+            channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
             URL = "PROCESSINGERROR"
         results[channel_names[index]] = URL
     
@@ -229,7 +228,6 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
     print >>output_file, """<html>
     <head>
         <title>Summary - {0}</title>
-        <link rel="stylesheet" type="text/css" href="../../style/main.css">
     </head>
     <body>
     <span><table style="text-align: left; width: 1100; height: 100   px; margin-left:auto; margin-right: auto;" border="1" cellpadding="1" cellspacing="1">
@@ -255,7 +253,7 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
     
     not_available_time = "<td align='right'>N/A</td><td align='right'>N/A</td><td align='right'>N/A</td>"
-    no_transients = "<td align='right'>N/A (No glitches found)</td><td align='right'>N/A</td><td align='right'><a href='{0}'>parameters</a></td>"
+    no_transients = "<td align='right'>No glitches found</td><td align='right'>N/A</td><td align='right'><a href='{0}'>parameters</a></td>"
     not_available_frequency = "<td align='right'>N/A</td><td align='right'>N/A</td>"
     
     result_columns_time = "<td align='right'><a href='{0}'>Results</a></td><td align='right'><a href='{0}Glitchgram.html'>glitchgram</a></td><td align='right'><a href='{0}parameters.txt'>parameters</a></td>"
@@ -294,7 +292,7 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
             else:
                 row += result_columns_freq.format(URL_freq)
         except:
-            # The given channel's key does not exist  (or results does not exist), so there are no results for that channel:
+            # The given channel's key does not exist (or results does not exist), so there are no results for that channel:
             row += not_available_frequency
         
         # Close the current row and write to file:
@@ -303,19 +301,19 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     
     
     # Final touch: add configuration files, original command, error list, then close html file tags
-    config_time = "./misc/config_{0}_time.txt".format(list_name)
-    config_frequency = "./misc/config_{0}_frequency.txt".format(list_name)
+    config_time = "/misc/config_{0}_time.txt".format(list_name)
+    config_frequency = "/misc/config_{0}_frequency.txt".format(list_name)
     
     configstring = "Configuration files: "
     if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
-        configstring += "<a href='{0}'>Time Domain</a>".format(config_time)
+        configstring += "<a href='.{0}'>Time Domain</a>".format(config_time)
     configstring += ", "
     if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
-        configstring += "<a href='{0}'>Frequency Domain</a>".format(config_frequency)
+        configstring += "<a href='.{0}'>Frequency Domain</a>".format(config_frequency)
     
     global original_command
     original_command_string = join(original_command, " ")
@@ -366,7 +364,7 @@ def locked_times_plot(list_path, out_path, start_time, end_time):
                 # We have just read strings, convert to integers:
                 times.append( [int(tmp1[0]), int(tmp1[1])] )
     
-
+    
     
     fig = plt.figure(figsize=(int(IMAGE_WIDTH/DPI),int(IMAGE_HEIGHT/DPI)), dpi=DPI)
     ax = fig.add_subplot(111, axisbg="red", alpha=0.3)
@@ -413,10 +411,6 @@ def locked_times_plot(list_path, out_path, start_time, end_time):
     #locked_times_plots = []
     
     for interval in times:
-        """tmp = np.array(x_axis, dtype="float")
-        where = (tmp>=interval[0]) & (tmp<=interval[1])
-        locked_times_plots.append(matplotlib.collections.BrokenBarHCollection.span_where(tmp, ymin=0, ymax=1, where=where, facecolor='green', alpha=0.9))
-        ax.add_collection(locked_times_plots[-1])"""
         ax.fill([interval[0], interval[1], interval[1], interval[0]], [0,0,1,1], "green")
     
     
@@ -434,8 +428,6 @@ def main():
     user_name = os.path.expanduser("~").split("/")[-1]
     output_dir = os.path.expanduser("/home/"+user_name+"/public_html/PCAT_cron")
     
-    # Call grid-proxy-init to initialize the robot cert
-    subprocess.call(["grid-proxy-init"])
     
     try:
         os.makedirs(output_dir)
@@ -445,6 +437,9 @@ def main():
     if (not opts.list) and (not ( opts.start and opts.end)):
         print "Either a list of times or start and end GPS times have to be supplied."
         print "Re-run with -h for usage."
+        exit()
+    if not (opts.IFO):
+        print "IFO ('L' or 'H') has to be supplied. Quitting."
         exit()
     
     # Set an output name if name has not been provided
@@ -469,19 +464,20 @@ def main():
         f.close()
         del tmp
     
+    if opts.IFO == 'L':
+        FLAG = "L1:DMT-SCIENCE"
+    else:
+        FLAG = "H1:DMT-SCIENCE"
+        
     if not opts.list:
-        if (start_time < 1091836816):
-            FLAG_1 = "L1:DMT-XARM_LOCK:1"
-            FLAG_2 = "L1:DMT-YARM_LOCK:1"
-            FLAG_3 = "L1:DMT-PRC_LOCK:1"
-            # Get locked segments for each the three above flags:
-            print "Retrieving locked segments..."
-            locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
-            locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
-        else:
-            FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
-            
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
+        try:
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
+        except:
+            print "Failed to retrieve locked segments, make sure your proxy certificate is loaded, by running"
+            print "ligo-proxy-init albert.einstein"
+            print "Replacing albert.eistein with your LIGO credentials"
+            exit()
+        
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
@@ -506,6 +502,7 @@ def main():
     configuration_file_time = os.path.abspath(opts.time)
     shutil.copyfile(configuration_file_time, output_dir + "/misc/config_" + os.path.basename(times_list) + "_time.txt")
     configuration_time = read_config_time(configuration_file_time)
+    
     if (opts.frequency):
         configuration_file_frequency = os.path.abspath(opts.frequency)
         frequency_configuration = read_config_frequency(configuration_file_frequency)
