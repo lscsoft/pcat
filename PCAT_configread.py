@@ -228,7 +228,6 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
     print >>output_file, """<html>
     <head>
         <title>Summary - {0}</title>
-        <link rel="stylesheet" type="text/css" href="../../style/main.css">
     </head>
     <body>
     <span><table style="text-align: left; width: 1100; height: 100   px; margin-left:auto; margin-right: auto;" border="1" cellpadding="1" cellspacing="1">
@@ -302,19 +301,19 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     
     
     # Final touch: add configuration files, original command, error list, then close html file tags
-    config_time = "./misc/config_{0}_time.txt".format(list_name)
-    config_frequency = "./misc/config_{0}_frequency.txt".format(list_name)
+    config_time = "/misc/config_{0}_time.txt".format(list_name)
+    config_frequency = "/misc/config_{0}_frequency.txt".format(list_name)
     
     configstring = "Configuration files: "
     if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
-        configstring += "<a href='{0}'>Time Domain</a>".format(config_time)
+        configstring += "<a href='.{0}'>Time Domain</a>".format(config_time)
     configstring += ", "
     if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
-        configstring += "<a href='{0}'>Frequency Domain</a>".format(config_frequency)
+        configstring += "<a href='.{0}'>Frequency Domain</a>".format(config_frequency)
     
     global original_command
     original_command_string = join(original_command, " ")
@@ -365,7 +364,7 @@ def locked_times_plot(list_path, out_path, start_time, end_time):
                 # We have just read strings, convert to integers:
                 times.append( [int(tmp1[0]), int(tmp1[1])] )
     
-
+    
     
     fig = plt.figure(figsize=(int(IMAGE_WIDTH/DPI),int(IMAGE_HEIGHT/DPI)), dpi=DPI)
     ax = fig.add_subplot(111, axisbg="red", alpha=0.3)
@@ -412,10 +411,6 @@ def locked_times_plot(list_path, out_path, start_time, end_time):
     #locked_times_plots = []
     
     for interval in times:
-        """tmp = np.array(x_axis, dtype="float")
-        where = (tmp>=interval[0]) & (tmp<=interval[1])
-        locked_times_plots.append(matplotlib.collections.BrokenBarHCollection.span_where(tmp, ymin=0, ymax=1, where=where, facecolor='green', alpha=0.9))
-        ax.add_collection(locked_times_plots[-1])"""
         ax.fill([interval[0], interval[1], interval[1], interval[0]], [0,0,1,1], "green")
     
     
@@ -507,6 +502,7 @@ def main():
     configuration_file_time = os.path.abspath(opts.time)
     shutil.copyfile(configuration_file_time, output_dir + "/misc/config_" + os.path.basename(times_list) + "_time.txt")
     configuration_time = read_config_time(configuration_file_time)
+    
     if (opts.frequency):
         configuration_file_frequency = os.path.abspath(opts.frequency)
         frequency_configuration = read_config_frequency(configuration_file_frequency)
