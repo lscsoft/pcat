@@ -153,13 +153,13 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b>Time Domain</b>:</br>"
                 errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
-            channel_processing_errors += "\t{0}</br>".format(error)
+            channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
             URL = "PROCESSINGERROR"
         results[channel_names[index]] = URL
     
@@ -186,13 +186,13 @@ def run_PCAT_frequency(list_name, configuration):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
                 errors +=1
             channel_processing_errors += "{1} - Channel name: {0}, error:</br>".format(channel_names[index], errors)
-            channel_processing_errors += "\t{0}</br>".format(error)
+            channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
             URL = "PROCESSINGERROR"
         results[channel_names[index]] = URL
     
@@ -301,19 +301,19 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     
     
     # Final touch: add configuration files, original command, error list, then close html file tags
-    config_time = "./misc/config_{0}_time.txt".format(list_name)
-    config_frequency = "./misc/config_{0}_frequency.txt".format(list_name)
+    config_time = "/misc/config_{0}_time.txt".format(list_name)
+    config_frequency = "/misc/config_{0}_frequency.txt".format(list_name)
     
     configstring = "Configuration files: "
     if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
-        configstring += "<a href='{0}'>Time Domain</a>".format(config_time)
+        configstring += "<a href='.{0}'>Time Domain</a>".format(config_time)
     configstring += ", "
     if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
-        configstring += "<a href='{0}'>Frequency Domain</a>".format(config_frequency)
+        configstring += "<a href='.{0}'>Frequency Domain</a>".format(config_frequency)
     
     global original_command
     original_command_string = join(original_command, " ")
