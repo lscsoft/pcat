@@ -158,7 +158,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b>Time Domain</b>:</br>"
-                errors += 1
+            errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
             URL = "PROCESSINGERROR"
@@ -191,7 +191,7 @@ def run_PCAT_frequency(list_name, configuration):
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
-                errors +=1
+            errors +=1
             channel_processing_errors += "{1} - Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
             URL = "PROCESSINGERROR"
