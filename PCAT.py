@@ -1399,7 +1399,7 @@ def pipeline(args):
 	# If automatically chosing components update parameters dump to include
 	# number of PCs used when clustering	
 	if AUTOCHOOSE_COMPONENTS:
-		components_number = np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0))
+		components_number = max(1,np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0)))
 		with open("parameters.txt", "r") as f:
 			text = f.read()
 			text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
