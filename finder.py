@@ -323,7 +323,6 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	
 	freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
-	
 	delta_t = 1.0/f_sampl
 	
 	for index, point in enumerate(to_analyze):
@@ -367,7 +366,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			# detector spectrum.
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
-			# Since g(f) is symmetric around f  (time series is real).
+			# Since g(f) is symmetric around f  (time series is real)/
 			
 			spike.fft = delta_t*np.fft.rfft(spike.waveform)
 			spike.fft_freq = freqs
@@ -375,6 +374,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			spike.segment_psd = psd
 			
 			spike.SNR = np.sqrt(4.0 * f_sampl/float(spike_width) * (spike.psd/psd).sum() )
+			
 			# Save Spike object
 			spikes.append(spike)
 			
