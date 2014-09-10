@@ -322,7 +322,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	
-	freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
+	freqs, psd = median_mean_average_psd(to_analyze, f_sampl, f_sampl)
 	delta_t = 1.0/f_sampl
 	
 	for index, point in enumerate(to_analyze):
@@ -361,16 +361,16 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 							waveform, f_sampl)
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
-			#	SNR^2(f) = |g(f)|^2/Pxx(f)
+			#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
 			# Since g(f) is symmetric around f  (time series is real)/
 			
-			spike.fft = delta_t*np.fft.rfft(spike.waveform)
+			spike_freqs, spike.psd = mlab.psd(spike.waveform, NFFT=spike.waveform.size, Fs=f_sampl)
 			spike.fft_freq = freqs
-			spike.psd = np.abs(spike.fft)**2
+			
 			spike.segment_psd = psd
 			
 			spike.SNR = np.sqrt(4.0 * f_sampl/float(spike_width) * (spike.psd/psd).sum() )
