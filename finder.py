@@ -322,7 +322,17 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	
-	freqs, psd = median_mean_average_psd(to_analyze, f_sampl, f_sampl)
+	# Choose NFFT to have a frequency resolution of 1 Hz or better
+	
+	if (spike_width < f_sampl):
+		window = np.hanning(spike_width)
+		window_norm = (window**2).sum()/spike_width
+		freqs, psd = median_mean_average_psd(to_analyze, int(f_sampl), f_sampl)
+	else:
+		window = np.hanning(f_sampl)
+		window_norm = (window**2).sum()/spike_width
+		freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
+	
 	delta_t = 1.0/f_sampl
 	
 	for index, point in enumerate(to_analyze):
@@ -337,7 +347,6 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 				max_spike_index = index
 			
 			last_spike_index = index
-		
 		elif (index-max_spike_index > time_resolution) and HAS_SPIKE:
 			# We're now outside the search range for the spike: save the 
 			# current spike and start over.
@@ -367,13 +376,18 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
 			# Since g(f) is symmetric around f  (time series is real)/
-			
 			spike_freqs, spike.psd = mlab.psd(spike.waveform, NFFT=spike.waveform.size, Fs=f_sampl)
+			
+			# Factor of two in psd because rfft is one sided.
+			spike.psd = 2 * 1.0/window_norm * 1.0 *  np.abs(delta_t*np.fft.rfft(spike.waveform*window, n=int(f_sampl)))**2
+			spike.psd[0] /= 2.0
 			spike.fft_freq = freqs
 			
 			spike.segment_psd = psd
 			
-			spike.SNR = np.sqrt(4.0 * f_sampl/float(spike_width) * (spike.psd/psd).sum() )
+			# We don't need the factor of 4 in front of the integral because both spike.psd and psd
+			# are one-sided and are correctly normalized
+			spike.SNR = np.sqrt( 1.0 * (spike.psd/psd).sum()/psd.size )
 			
 			# Save Spike object
 			spikes.append(spike)
