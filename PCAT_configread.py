@@ -480,12 +480,15 @@ def main():
             FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
             
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
-        # Saved the locked_times list to a txt file in ~/PCAT/out_file 
+           
+        # Save the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
         if (len(locked_times) > 0):
             for segment in locked_times:
-                f.write(str(int(segment[0]))+"\t"+str(int(segment[1]))+"\n")
+                # Add one second at the start and remove one second at the end of
+                # each segment to avoid pre-lock-loss transients
+                f.write(str(int(segment[0]+1))+"\t"+str(int(segment[1])-1)+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
