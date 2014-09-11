@@ -470,6 +470,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax.set_xticks(x_ticks)
 	ax.set_xticklabels(x_ticks_labels, fontsize=12)
 	
+	
 	# Color in green the part of the plot corresponding to locked times
 	# (defined in the 'times' variable)
 	locked_times_plots = []
@@ -590,7 +591,8 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax2.set_ylabel("Peak Frequency [Hz]")
 	ax2.yaxis.grid(which="both")
 	ax2.xaxis.grid(which="major")
-	
+	ax2.set_xticks(x_ticks)
+	ax2.set_xticklabels(x_ticks_labels, fontsize=12)
 	
 		
 	
