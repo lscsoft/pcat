@@ -381,7 +381,8 @@ def whiten(time_series, excluded_seconds, f_sampl, resample_freq, highpass=True,
 	# transformed time series spectrum where each fequency bin is
 	# weighted by the computed coefficients
 	# Multiply by delta_f to obtain the correctly normalized result. 
-	whitened_time_series = np.real( 2 * delta_f * np.fft.irfft(transform*coefficients) )
+	whitened_time_series = np.real( 2.0 * delta_f * np.fft.irfft(transform*coefficients) )
+	
 	
 	# The returned whitened time series normalization and units depend on the 
 	# choice of the whitened coefficients, see the above definition for the 

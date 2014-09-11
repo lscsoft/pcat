@@ -42,7 +42,7 @@ with open(args.database, "rb") as f:
 class GPS():
     def __init__(self, seconds, decimals):
         self.seconds = seconds
-        self.nanoseconds = decimals*1e10
+        self.nanoseconds = decimals*1e8
     
 for index, spike in enumerate(database):
     row = table.RowType()
@@ -86,5 +86,5 @@ xmldoc.appendChild(ligolw.LIGO_LW())
 xmldoc.childNodes[0].appendChild(proc_table)
 xmldoc.childNodes[0].appendChild(table)
 
-with open(args.database.replace('.list', '.xml'), 'w') as output:
-    xmldoc.write(fileobj=output)
+with open(args.database.replace('.list', '.xml.gz'), 'w') as output:
+    xmldoc.write(fileobj=output,gz=True)

@@ -370,14 +370,12 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 							waveform, f_sampl)
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
-			#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
+			#	SNR^2(f) = |g(f)|^2/Pxx(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
 			# Since g(f) is symmetric around f  (time series is real)/
-			spike_freqs, spike.psd = mlab.psd(spike.waveform, NFFT=spike.waveform.size, Fs=f_sampl)
-			
 			# Factor of two in psd because rfft is one sided.
 			spike.psd = 2 * 1.0/window_norm * 1.0 *  np.abs(delta_t*np.fft.rfft(spike.waveform*window, n=int(f_sampl)))**2
 			spike.psd[0] /= 2.0
