@@ -157,7 +157,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
-                channel_processing_errors += "<b>Time Domain</b>: </br>"
+                channel_processing_errors += "<b>Time Domain</b>:</br>"
             errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
@@ -187,7 +187,7 @@ def run_PCAT_frequency(list_name, configuration):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
