@@ -1073,7 +1073,7 @@ def pipeline(args):
 						time_series = retrieve_timeseries(start, end, channel, IFO, frame_type)
 					except Exception, error:
 						log = open(log_name, "a")
-						log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}".format(start, end, str(error)))
+						log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}\n".format(start, end, str(error)))
 						log.close()
 						return []
 					conditioned = conditioning_function(time_series)
@@ -1086,7 +1086,7 @@ def pipeline(args):
 					time_series = retrieve_timeseries(start, end, channel, IFO, frame_type)
 				except Exception, error:
 					log = open(log_name, "a")
-					log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}".format(start, end, str(error)))
+					log.write("!!! ERROR OPENING SEGMENT {0}-{1}:\t{2}\n".format(start, end, str(error)))
 					log.close()
 					return []
 				
@@ -1399,7 +1399,7 @@ def pipeline(args):
 	# If automatically chosing components update parameters dump to include
 	# number of PCs used when clustering	
 	if AUTOCHOOSE_COMPONENTS:
-		components_number = np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0))
+		components_number = max(1,np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0)))
 		with open("parameters.txt", "r") as f:
 			text = f.read()
 			text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))

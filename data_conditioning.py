@@ -510,6 +510,8 @@ def median_mean_average_psd(time_series, segment_length, f_sampl):
 		Pxx = np.abs( delta_t * np.fft.rfft(to_transform*window) )**2
 		# Apply correct normalization (from FINDCHIRP paper)
 		Pxx *= ( ( 2.0 * delta_f )/(window_normalization) ) 
+		# Fix normalization in the DC bin
+		Pxx[0] /= 2.0
 		
 		# Units are now counts^2 Hz^-1
 		
@@ -540,11 +542,7 @@ def median_mean_average_psd(time_series, segment_length, f_sampl):
 		PSD_estimate = even_psd_median*even_weight + odd_psd_median*odd_weight
 		PSD_estimate /= float( Ns_even + Ns_odd)
 	
-	# Matlab BUG
-	#PSD_estimate[0] *= 2.0
-	#PSD_estimate[-1] *= 2.0
-	#######################
-	
+
 	return freqs, PSD_estimate
 
 def median_mean_average_energy(time_series, step):
