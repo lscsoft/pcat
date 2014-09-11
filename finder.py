@@ -375,7 +375,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			# detector spectrum.
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
-			# Since g(f) is symmetric around f  (time series is real)/
+			# Since g(f) is symmetric around f  (time series is real)
 			# Factor of two in psd because rfft is one sided.
 			spike.psd = 2 * 1.0/window_norm * 1.0 *  np.abs(delta_t*np.fft.rfft(spike.waveform*window, n=int(f_sampl)))**2
 			spike.psd[0] /= 2.0
