@@ -413,8 +413,9 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		units = "h" # hours
 	elif (end_time-start_time)>5*60:
 		units = "m" # minutes
-	else:
-		units = "s" # seconds
+	elif (end_time-start_time>3*86400):
+		units = "d" # days
+	
 	def tformat(x):
 		"""tick formatter definition"""
 		x -= start_time
@@ -422,6 +423,8 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			x /= 3600.0
 		elif units == "m":
 			x /= 60.0
+		elif units == "d":
+			x /= 24.0
 		tick = "{0:.1f}{1}".format(x, units)
 		return tick
 	
