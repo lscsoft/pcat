@@ -28,12 +28,15 @@ proc_row.ifos = set([ifo])
 proc_row.program = sys.argv[0]
 proc_row.username = os.path.expanduser("~").split("/")[-1]
 proc_row.comment = "converted from PCAT output"
+proc_table.append(proc_row)
+
+#TODO: ADD PCAT RESULTS URL HERE
 
 table = lsctables.New(lsctables.SnglBurstTable, ["ifo", "peak_time", 
       "peak_time_ns", "start_time", "start_time_ns",
       "duration",  "search", "event_id", "process_id",
-      "central_freq", "channel", "amplitude", "snr"])
-      #"confidence","chisq", "chisq_dof", "bandwidth"])
+      "central_freq", "channel", "amplitude", "snr",
+      "bandwidth"]) #"confidence","chisq", "chisq_dof"
 
 #TODO add PCAT type to table??
 
@@ -56,10 +59,13 @@ for index, spike in enumerate(database):
     start = GPS(int(tmp_time[0]), int(tmp_time[1]))
     row.set_start(start)
     # duration is temporary, replace with spike.duration
-    row.duration = (spike.end - spike.start)*spike.sampling 
+    row.duration = (spike.waveform.size)/spike.sampling 
     #row.duration = spike.duration
     
-    #row.bandwidth = band
+    # Duration is simply f_max -f_min, or nyquist frequency minus lowest frequcency (1/segment_len)
+    row.bandwidth = spike.sampling/2.0 - spike.sampling/float(spike.waveform.size)
+    #FIXME: Bandwidth is actually lower because data is high pass filtered.
+    # We cannot do much about this until we add this to PCAT.py
     
     row.central_freq = spike.central_freq
 
@@ -86,5 +92,10 @@ xmldoc.appendChild(ligolw.LIGO_LW())
 xmldoc.childNodes[0].appendChild(proc_table)
 xmldoc.childNodes[0].appendChild(table)
 
-with open(args.database.replace('.list', '.xml.gz'), 'w') as output:
-    xmldoc.write(fileobj=output,gz=True)
+out_name = args.database.replace('.list', '.xml.gz')
+utils.write_filename(xmldoc, out_name, gz=True)
+
+print "Saved '{0}'".format(out_name)
+
+
+# Done!
