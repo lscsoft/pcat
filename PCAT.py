@@ -921,7 +921,7 @@ def pipeline(args):
 	# Print parameters parsed by __check_options_and_args__()
 	__print_parameters__()
 	
-	print "Saved saved URL:\n  {0}\n".format(results_URL + "parameters.txt")
+	print "Saved URL:\n  {0}\n".format(results_URL + "parameters.txt")
 	
 	# Open new file to save the parameters for the run in 
 	f = open(output_dir + "parameters.txt", "w")

@@ -330,7 +330,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 		freqs, psd = median_mean_average_psd(to_analyze, int(f_sampl), f_sampl)
 	else:
 		window = np.hanning(f_sampl)
-		window_norm = (window**2).sum()/spike_width
+		window_norm = (window**2).sum()/float(f_sampl)
 		freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
 	
 	delta_t = 1.0/f_sampl
@@ -371,7 +371,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 							waveform, f_sampl)
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
-			#	SNR^2(f) = |g(f)|^2/Pxx(f)
+			#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
