@@ -67,11 +67,14 @@ for index, spike in enumerate(database):
     #FIXME: Bandwidth is actually lower because data is high pass filtered.
     # We cannot do much about this until we add this to PCAT.py
     
+    ## Confidence is simply PCAT's threshold (LIGO-T1200125), either add this to PCAT database (add in finder.py)
+    ## or simply wait to merge xml_postproc into PCAT as the above
+    #row.confidence = 0.0 # FIXME: Do we care to do this right?
     row.central_freq = spike.central_freq
 
     #row.chisq = 0
     #row.chisq_dof = 2*band*dur
-    #row.confidence = 0.0 # FIXME: Do we care to do this right?
+    
 
     row.snr = spike.SNR
     row.amplitude = np.max(np.abs(spike.waveform))
