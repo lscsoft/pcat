@@ -330,7 +330,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 		freqs, psd = median_mean_average_psd(to_analyze, int(f_sampl), f_sampl)
 	else:
 		window = np.hanning(f_sampl)
-		window_norm = (window**2).sum()/spike_width
+		window_norm = (window**2).sum()/float(f_sampl)
 		freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
 	
 	delta_t = 1.0/f_sampl
