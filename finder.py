@@ -330,7 +330,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 		freqs, psd = median_mean_average_psd(to_analyze, int(f_sampl), f_sampl)
 	else:
 		window = np.hanning(f_sampl)
-		window_norm = (window**2).sum()/spike_width
+		window_norm = (window**2).sum()/float(f_sampl)
 		freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
 	
 	delta_t = 1.0/f_sampl
@@ -347,6 +347,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 				max_spike_index = index
 			
 			last_spike_index = index
+		
 		elif (index-max_spike_index > time_resolution) and HAS_SPIKE:
 			# We're now outside the search range for the spike: save the 
 			# current spike and start over.
@@ -370,12 +371,12 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 							waveform, f_sampl)
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
-			#	SNR^2(f) = |g(f)|^2/Pxx(f)
+			#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
 			#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
-			# Since g(f) is symmetric around f  (time series is real)
+			# Since g(f) is symmetric around f  (time series is real)/
 			
 			# Factor of two in psd because rfft is one sided.
 			spike.psd = 2 * 1.0/window_norm * 1.0 *  np.abs(delta_t*np.fft.rfft(spike.waveform*window, n=int(f_sampl)))**2
