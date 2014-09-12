@@ -442,6 +442,9 @@ def main():
         print "IFO ('L' or 'H') has to be supplied. Quitting."
         exit()
     
+    # Call grid-proxy-init to initialize the robot cert
+    subprocess.call(["grid-proxy-init"])
+    
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
         out_name = str(opts.start)+"-"+str(opts.end)
