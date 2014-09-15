@@ -1139,21 +1139,19 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	#print "\tWritten: " + output + " (html and png)"
 
 
-def chisquare_test(database, labels):
+def correlation_test(database, labels):
 	"""
 		Chi square test for the clusters
 		
 		Takes as input a list of (colored) clusters, labels for the (full) database
-		and tests for the goodness of the clustering using a chisquare-based
-		test.
-		T
-		HIS IS BROKEN.
-		A confidence level can be implemented through the gmm class of scikit-learn 
+		and tests for the goodness of the clustering using a correlation test
+		
+	
+		A confidence level can probably be also implemented through the gmm class of scikit-learn 
 	"""
 	#TODO: check out GMM class functions sklearn.mixture.gmm, in particular gmm.predict_proba, gmm.score
-	print "chisquare_test() IS OBSOLETE, UNTESTED and probably useless."
 	
-	"""# Create a database for 
+	# Create a database
 	cluster_number = len(np.unique(labels))
 	colored_database = [[] for i in range(cluster_number)]
 	for index, spike in enumerate(database):
@@ -1167,32 +1165,31 @@ def chisquare_test(database, labels):
 		median = np.median([spike.waveform for spike in cluster], axis=0 )
 		representatives.append(median)
 	
-	# Compute differences between representative and glitches
+	# Compute correlations between representative and glitches
 	# for each cluster
-	cluster_differences = [ [] for i in range(cluster_number)]
+	cluster_correlations= [ [] for i in range(cluster_number)]
 	for index, cluster in enumerate(colored_database):
-		diffs = [representatives[index]-spike.waveform for spike in cluster]
-		cluster_differences[index] = diffs
-	
-	# Compute chisquares, which are simply the sum squares of the difference
+		correlations = [np.corrcoef(representatives[index], spike.waveform) for spike in cluster]
+		cluster_correlations[index] = correlations
+
+	"""# Compute chisquares, which are simply the sum squares of the difference
 	# vectors
 	cluster_chi_squares = [ [] for i in range(cluster_number)]
 	for index, diffs in enumerate(cluster_differences):
 		chi_squares = [(zeta**2).sum() for zeta in diffs]
-		cluster_chi_squares[index].extend(chi_squares)
+		cluster_chi_squares[index].extend(chi_squares)"""
 		
 	
-	# Plot chi squares:
+	# Plot correlation coefficients:
 	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=300)
 	ax = []
-	for index, chi_squares in enumerate(cluster_chi_squares):
+	for index, correlations in enumerate(cluster_correlations):
 		glitch_indexes = range(1, len(chi_squares)+1)
 		
-		
 		tmp = fig.add_subplot(cluster_number, 1, index+1)
-		if (len(chi_squares) > 1):
-			tmp.plot(glitch_indexes, np.array(chi_squares)/len(chi_squares))
-			tmp.scatter(glitch_indexes, np.array(chi_squares)/len(chi_squares))
+		if (len(correlations) > 1):
+			tmp.plot(glitch_indexes, correlations)
+			tmp.scatter(glitch_indexes, correlations)
 		else:
 			tmp.set_title("Cluster #{0} (1 element)".format(index+1))
 			tmp.plot(range(10), range(10))
@@ -1207,22 +1204,17 @@ def chisquare_test(database, labels):
 		for i, item in enumerate(minor_ticks):
 			if ( item % 5 == 0):
 				minor_ticks.pop(i)
-		major_ticks = [i for i in range(0, len(chi_squares),5)]
-		tmp.set_xticks(major_ticks)
-		tmp.set_xticks(minor_ticks, minor=True)
-		
-		tmp.set_xlim(1, len(chi_squares)+1)
-		tmp.set_ylim(0,1.05*np.max(chi_squares)/len(chi_squares))
+		plt.ylim((-1,-1))
 		tmp.set_xlabel("Glitch Number")
-		tmp.set_ylabel("\chi^2/ndf")
+		tmp.set_ylabel("Correlation Coefficients")
 		ax.append(tmp)
 		
-	ax[0].set_title("Chi Squares/ndf: Cluster #{0}".format(index+1))
-	fig.savefig("Chisquare.pdf", dpi = DPI, bbox_inches='tight', pad_inches=0.2)
+	ax[0].set_title("Correlation Coefficients: Cluster #{0}".format(index+1))
+	fig.savefig("correlations.pdf", dpi = DPI, bbox_inches='tight', pad_inches=0.2)
 	plt.close('all')
 	
-	print "\tSaved 'Chisquare.pdf'."
-	"""
+	print "\tSaved 'correlations.pdf'."
+
 	return
 
 
@@ -1314,7 +1306,7 @@ def main():
 					if not ( os.path.exists( "time_series/Type_"+str(i+1) ) ):
 						os.mkdir( "time_series/Type_"+str(i+1) )
 				
-				spike_time_series(spike_database, (score_matrix, principal_components, means, stds), components_number, labels, SAMPLING, SILEN)
+				spike_time_series(spike_database, (score_matrix, principal_components, means, stds), components_number, labels, SAMPLING, SILENT)
 				
 				
 			elif ( "frequency" in ANALYSIS ):
