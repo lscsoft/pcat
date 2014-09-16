@@ -1169,7 +1169,10 @@ def correlation_test(database, labels):
 	# for each cluster
 	cluster_correlations= [ [] for i in range(cluster_number)]
 	for index, cluster in enumerate(colored_database):
-		correlations = [np.corrcoef(representatives[index], spike.waveform) for spike in cluster]
+		# np.corrcoef returns the correlation matrix, which is symmetric (2x2).
+		# on the diagonal we have the autocorrelations, off diagonal we have the cross correlation
+		# which is what we're interested in.
+		correlations = [np.corrcoef(representatives[index], spike.waveform)[0,1] for spike in cluster]
 		cluster_correlations[index] = correlations
 
 	"""# Compute chisquares, which are simply the sum squares of the difference
@@ -1184,7 +1187,7 @@ def correlation_test(database, labels):
 	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=300)
 	ax = []
 	for index, correlations in enumerate(cluster_correlations):
-		glitch_indexes = range(1, len(chi_squares)+1)
+		glitch_indexes = range(1, len(correlations)+1)
 		
 		tmp = fig.add_subplot(cluster_number, 1, index+1)
 		if (len(correlations) > 1):
@@ -1204,11 +1207,11 @@ def correlation_test(database, labels):
 		for i, item in enumerate(minor_ticks):
 			if ( item % 5 == 0):
 				minor_ticks.pop(i)
-		plt.ylim((-1,-1))
+		
 		tmp.set_xlabel("Glitch Number")
 		tmp.set_ylabel("Correlation Coefficients")
 		ax.append(tmp)
-		
+		plt.ylim((-1.05,-1.05))
 	ax[0].set_title("Correlation Coefficients: Cluster #{0}".format(index+1))
 	fig.savefig("correlations.pdf", dpi = DPI, bbox_inches='tight', pad_inches=0.2)
 	plt.close('all')
