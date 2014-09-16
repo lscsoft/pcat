@@ -1143,13 +1143,15 @@ def correlation_test(database, labels):
 	"""
 		Chi square test for the clusters
 		
-		Takes as input a list of (colored) clusters, labels for the (full) database
-		and tests for the goodness of the clustering using a correlation test
+		Takes as input a PCAT database (python list) and gaussian_mixture() labels (list)
+		and tests for the goodness of the clustering using a correlation test with the average (median) waveforms 
 		
 	
-		A confidence level can probably be also implemented through the gmm class of scikit-learn 
+		A confidence level can probably be also implemented through the gmm class of scikit-learn.
 	"""
 	#TODO: check out GMM class functions sklearn.mixture.gmm, in particular gmm.predict_proba, gmm.score
+	#TODO: Add clickable points, linking to individual observations (check calculate_types)
+	#TODO: it would be interesting having GPS time on the x axis (they're already time-ordered though, since that's the way the orinal database is built)
 	
 	# Create a database
 	cluster_number = len(np.unique(labels))
@@ -1164,7 +1166,7 @@ def correlation_test(database, labels):
 	for cluster in colored_database:
 		median = np.median([spike.waveform for spike in cluster], axis=0 )
 		representatives.append(median)
-	
+	print len(representatives), len(median)
 	# Compute correlations between representative and glitches
 	# for each cluster
 	cluster_correlations= [ [] for i in range(cluster_number)]
@@ -1174,14 +1176,6 @@ def correlation_test(database, labels):
 		# which is what we're interested in.
 		correlations = [np.corrcoef(representatives[index], spike.waveform)[0,1] for spike in cluster]
 		cluster_correlations[index] = correlations
-
-	"""# Compute chisquares, which are simply the sum squares of the difference
-	# vectors
-	cluster_chi_squares = [ [] for i in range(cluster_number)]
-	for index, diffs in enumerate(cluster_differences):
-		chi_squares = [(zeta**2).sum() for zeta in diffs]
-		cluster_chi_squares[index].extend(chi_squares)"""
-		
 	
 	# Plot correlation coefficients:
 	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=300)
@@ -1195,7 +1189,7 @@ def correlation_test(database, labels):
 			tmp.scatter(glitch_indexes, correlations)
 		else:
 			tmp.set_title("Cluster #{0} (1 element)".format(index+1))
-			tmp.plot(range(10), range(10))
+			tmp.plot(range(10), np.zeros(10))
 			tmp.scatter([0], [0])
 		
 		
@@ -1210,9 +1204,12 @@ def correlation_test(database, labels):
 		
 		tmp.set_xlabel("Glitch Number")
 		tmp.set_ylabel("Correlation Coefficients")
+		plt.autoscale(True, axis='x', tight=True)
+		plt.ylim((-1.05,1.05))
 		ax.append(tmp)
-		plt.ylim((-1.05,-1.05))
-	ax[0].set_title("Correlation Coefficients: Cluster #{0}".format(index+1))
+		
+		
+	ax[0].set_title("Correlation Coefficients:\n Cluster #{0}".format(1))
 	fig.savefig("correlations.pdf", dpi = DPI, bbox_inches='tight', pad_inches=0.2)
 	plt.close('all')
 	
