@@ -1430,7 +1430,7 @@ def pipeline(args):
 	
 	print_cluster_info(colored_clusters)	
 	
-	correlation_test(data_list, labels)
+	correlation_test(data_list, labels, ANALYSIS)
 		
 	# Save scatterplot with image maps:
 	# images are saved to a subfolder, "Scatterplot_images", defined in 

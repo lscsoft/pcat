@@ -912,8 +912,8 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 			
 		
 		fig.savefig( "time_series/Type_%i/%.3f.pdf" % (labels[index]+1, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
-		plt.close('all')
-		del fig
+		plt.close(fig)
+		del ax, ax1, fig
 		
 		if not SILENT:
 			if ( spikes_number > 1 ):
@@ -1068,8 +1068,8 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 		elif ( "generic" in ANALYSIS ):
 			pass
 		else:
-			print "Analysis type '" + ANALYSIS + "' not supported. Quitting."
-			sys.exit()
+			assert False, "Analysis type '" + ANALYSIS + "' not supported. Quitting."
+			
 	
 	for index, element in enumerate(colored_clusters_list):
 		tmp = np.array(element)
@@ -1126,8 +1126,9 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 		
 	# need to do height - y for the image-map
 	fmts = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords, info_list) ]
-		
-	print >> open(output + ".html", 'w'), tmpl % (images_folder + "/" + output, "\n".join(fmts))
+	
+	with open(output + ".html", 'w') as output_file:
+		print >> output_file, tmpl % (images_folder + "/" + output, "\n".join(fmts))
 	#print "\tWritten: " + output + " (html and png)"
 
 
@@ -1146,6 +1147,7 @@ def correlation_test(database, labels, ANALYSIS):
 	
 	# Create a database
 	cluster_number = len(np.unique(labels))
+	glitch_number = float(len(labels))
 	colored_database = [[] for i in range(cluster_number)]
 	info_list = [[] for i in range(cluster_number)]
 	for index, spike in enumerate(database):
@@ -1160,92 +1162,90 @@ def correlation_test(database, labels, ANALYSIS):
 		elif ( "generic" in ANALYSIS ):
 			return
 		else:
-			assert False, "What are you trying to do? Only time, frequency and generic analysis are supported ()"
+			assert False, "What are you trying to do? Only time, frequency and generic analysis are supported"
 	
 	# Compute a median for each cluster, used a representative
 	# time series for the cluster
 	representatives = []
-	for cluster in colored_database:
+	# Compute correlations between representative and glitches
+	# for each type
+	cluster_correlations = []
+	for index, cluster in enumerate(colored_database):
 		median = np.median([spike.waveform for spike in cluster], axis=0 )
 		representatives.append(median)
-	
-	# Compute correlations between representative and glitches
-	# for each cluster
-	cluster_correlations= [ [] for i in range(cluster_number)]
-	for index, cluster in enumerate(colored_database):
 		# np.corrcoef returns the correlation matrix, which is symmetric (2x2).
 		# on the diagonal we have the autocorrelations, off diagonal we have the cross correlation
 		# which is what we're interested in.
-		correlations = [np.corrcoef(representatives[index], spike.waveform)[0,1] for spike in cluster]
-		cluster_correlations[index] = correlations
+		correlations = [np.corrcoef(median, spike.waveform)[0,1] for spike in cluster]
+		cluster_correlations.append(correlations)
 	
 	# Plot correlation coefficients:
-	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=300)
-	ax = []
+	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=100)
+	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
+	dpi = fig.get_dpi()
+	height = fig.get_figheight() * dpi
 	
+	ax = []
+	xys =  [ [] for i in range(cluster_number)]
+	icoords =  [ [] for i in range(cluster_number)]
 	
 	for index, correlations in enumerate(cluster_correlations):
+		# Create subplot and add it to the ax list
+		ax.append(fig.add_subplot(cluster_number, 1, index+1))
+		# Create x axis
 		glitch_indexes = range(1, len(correlations)+1)
 		
-		tmp = fig.add_subplot(cluster_number, 1, index+1)
 		if (len(correlations) > 1):
-			tmp.plot(glitch_indexes, correlations)
-			tmp.scatter(glitch_indexes, correlations)
+			#ax[-1].plot(glitch_indexes, correlations)
+			ax[-1].plot(glitch_indexes, correlations, 'b.')
 		else:
-			tmp.set_title("Cluster #{0} (1 element)".format(index+1))
-			tmp.plot(range(10), np.zeros(10))
-			tmp.scatter(range(10), np.ones(10)*correlations[0])
+			ax[-1].set_title("Type #{0}: 1 element".format(index+1))
+			ax[-1].plot(range(10), np.zeros(10))
+			ax[-1].plot(range(10), np.ones(10)*correlations[0], "b.")
 		
+		# Save data for imagemap:
+		if (len(correlations) > 1):
+			xys[index] = zip(glitch_indexes, correlations)
+		else:
+			xys[index] = [(1, correlations[0])]
 		
+		ax[-1].set_title("Type #{0}: {1} of {2} ({3:.2f}%)".format(index+1, len(correlations), int(glitch_number), (len(correlations)/glitch_number)*100))
+		ax[-1].grid(which="both")
 		
-		tmp.set_title("Cluster #{0}".format(index+1))
-		tmp.grid(which="both")
-		
-		minor_ticks = glitch_indexes
-		for i, item in enumerate(minor_ticks):
-			if ( item % 5 == 0):
-				minor_ticks.pop(i)
-		
-		tmp.set_xlabel("Observation")
-		tmp.set_ylabel("Correlation Coefficients")
-		plt.autoscale(True, axis='x', tight=True)
+		ax[-1].set_xlabel("Observation")
+		ax[-1].set_ylabel("Correlation")
+		plt.xlim((0, len(correlations)))
 		plt.ylim((-1.05,1.05))
-		ax.append(tmp)
+	
+	# Set title for the first subplot
+	ax[0].set_title("Correlation Coefficients:\nType #1 {0}/{1} ({2:.2f}%)".format(len(cluster_correlations[0]), int(glitch_number), (len(cluster_correlations[0])/glitch_number)*100))
+	
+	# Get image coordinates for each of the points plotted in the previous loop
+	for index, correlations in enumerate(cluster_correlations):
+		# x axis is the same as above
+		glitch_indexes = range(1, len(correlations)+1)
 		
+		# We have the same number of transformed coordinates as glitch_indexes
+		ixs = [0]*len(glitch_indexes)
+		iys = [0]*len(glitch_indexes)
 		
-	ax[0].set_title("Correlation Coefficients:\n Cluster #{0}".format(1))	
-	dpi = fig.dpi()
-	fig.savefig("correlations.png", bbox_inches='tight', pad_inches=0.2)
+		# Transform coordinates
+		i = 0
+		for x, y in xys[index]:
+			ixs[i], iys[i] = ax[index].transData.transform_point( [x, y])
+			i += 1
+		icoords[index] = zip(ixs, iys)
+	
+	# Save figure
+	fig.savefig("Types_correlations.png", dpi=fig.get_dpi())
 	
 	###
-	# Setup the clickable HTML file
+	# Setup the clickable HTML file	
 	
-	# Create an array with the x and y coordinates of the points
-	
-	xys = []
-	icoords = []
-	ixs = []
-	iys = []
-	for index, correlations in enumerate(cluster_correlations):
-		glitch_indexes = range(1, len(correlations)+1)
-		if (len(correlations) > 1):
-			xys.append(zip(glitch_indexes, correlations))
-		else:
-			xys.append((1, correlations[0]))
-		
-		ixs.append([0]*len(glitch_indexes))
-		iys.append([0]*len(glitch_indexes))
-		i = 0
-		for x, y in xys[-1]:
-			ixs[-1][i], iys[-1][i] = ax[index].transData.transform_point( [x, y])
-			i += 1
-		icoords.append(zip(ixs, iys))
-	
-	
-	# The minimal 'template' to generate an image map.
+	# The minimal 'template' to generate an image map:
 	tmpl = """
 	<html><head><title>Correlations</title></head><body>
-	<img src="%s.png" usemap="#points" border="0">
+	<img src="%s" usemap="#points" border="0">
 	<map name="points">%s</map>
 	</body></html>"""
 	
@@ -1253,22 +1253,23 @@ def correlation_test(database, labels, ANALYSIS):
 	if "time" in ANALYSIS:
 		fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
 	elif "frequency" in ANALYSIS:
-		fmt = "<area shape='circle' coords='%f,%f,2' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
+		fmt = "<area shape='circle' coords='%f,%f,3' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
 	else:
-		assert False, "Analyis not time or frequency. What are you trying to do?"
+		assert False, "Analyis not time nor frequency. What are you trying to do?"
 		
 	# need to do height - y for the image-map
 	fmts = []
-	for index, infos in enumerate(info_list)
-		fmts.extend([fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])
 	
-	plt.close('all')
+	for index, infos in enumerate(info_list):
+		fmts.extend([fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
 	
-	f = open("Correlations.html", "w")
-	print >> f, tmpl % ("Correlations", "\n".join(fmts))
+	plt.close(fig)
+	
+	f = open("Types_correlations.html", "w")
+	print >> f, tmpl % ("Types_correlations.png", "\n".join(fmts))
 	f.close()
 	plt.close(fig)
-	print "\tSaved: Correlations.html"
+	print "`\n\tSaved: Types_correlations.html"
 	
 	
 	return
