@@ -118,7 +118,7 @@ from data_conditioning import *
 
 from finder import find_spikes
 from PCA import PCA, create_data_matrix, eigensystem, matrix_whiten
-from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series
+from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, correlation_test
 from GMM import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
 def __usage__():
@@ -1429,6 +1429,8 @@ def pipeline(args):
 		spike.type = labels[index]
 	
 	print_cluster_info(colored_clusters)	
+	
+	correlation_test(data_list, labels, ANALYSIS)
 		
 	# Save scatterplot with image maps:
 	# images are saved to a subfolder, "Scatterplot_images", defined in 
