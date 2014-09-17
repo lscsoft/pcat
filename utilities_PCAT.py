@@ -648,18 +648,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	<map name="points">%s</map>
 	</body></html>"""
 	
-	
-	server = get_server_url() + "~" + os.path.expanduser("~").split("/")[-1] + "/"
-	
-	# Get the correct name for the working directory, starting from public_html
-	start = 0
-	split_cwd = os.getcwd().split("/")
-	for index, element in enumerate(split_cwd):
-		if (element == "public_html"):
-			start = index+1
-			break
-	directory = join(split_cwd[start:], "/") + "/"
-	
 	fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
 		
 	# need to do height - y for the image-map
