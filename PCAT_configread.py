@@ -465,9 +465,9 @@ def main():
         del tmp
     
     if opts.IFO == 'L':
-        FLAG = "L1:DMT-SCIENCE"
+        FLAG = "L1:DMT-SCIENCE:1"
     else:
-        FLAG = "H1:DMT-SCIENCE"
+        FLAG = "H1:DMT-SCIENCE:1"
         
     if not opts.list:
         try:
