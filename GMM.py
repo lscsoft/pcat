@@ -1117,15 +1117,7 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	<img src="%s.png" usemap="#points" border="0">
 	<map name="points">%s</map>
 	</body></html>""".format(x, y)
-		
-	# Get the correct name for the working directory, starting from public_html
-	start = 0
-	split_cwd = os.getcwd().split("/")
-	for index, element in enumerate(split_cwd):
-		if (element == "public_html"):
-			start = index+1
-			break
-	directory = join(split_cwd[start:], "/") + "/"
+	
 	
 	if ( "time" in ANALYSIS):
 		fmt = "<area shape='circle' coords='%f,%f,2' href='time_series/Type_%i/%0.3f.pdf' title='GPS %.3f - Type %i'>"
@@ -1139,7 +1131,7 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	#print "\tWritten: " + output + " (html and png)"
 
 
-def correlation_test(database, labels):
+def correlation_test(database, labels, ANALYSIS):
 	"""
 		Chi square test for the clusters
 		
@@ -1150,16 +1142,26 @@ def correlation_test(database, labels):
 		A confidence level can probably be also implemented through the gmm class of scikit-learn.
 	"""
 	#TODO: check out GMM class functions sklearn.mixture.gmm, in particular gmm.predict_proba, gmm.score
-	#TODO: Add clickable points, linking to individual observations (check calculate_types)
 	#TODO: it would be interesting having GPS time on the x axis (they're already time-ordered though, since that's the way the orinal database is built)
 	
 	# Create a database
 	cluster_number = len(np.unique(labels))
 	colored_database = [[] for i in range(cluster_number)]
+	info_list = [[] for i in range(cluster_number)]
 	for index, spike in enumerate(database):
 		colored_database[labels[index]].append(spike)
 		
-		
+		# Save additional information used for the clickable html
+		if ( ANALYSIS == "time"):
+			info_list[labels[index]].append( ( labels[index]+1, spike.peak_GPS ) )
+		elif ( "frequency" in ANALYSIS):
+			info = "%s-%s" % (spike.segment_start, spike.segment_end )
+			info_list[labels[index]].append( ( labels[index]+1, info) )
+		elif ( "generic" in ANALYSIS ):
+			return
+		else:
+			assert False, "What are you trying to do? Only time, frequency and generic analysis are supported ()"
+	
 	# Compute a median for each cluster, used a representative
 	# time series for the cluster
 	representatives = []
@@ -1180,6 +1182,8 @@ def correlation_test(database, labels):
 	# Plot correlation coefficients:
 	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=300)
 	ax = []
+	
+	
 	for index, correlations in enumerate(cluster_correlations):
 		glitch_indexes = range(1, len(correlations)+1)
 		
@@ -1190,7 +1194,7 @@ def correlation_test(database, labels):
 		else:
 			tmp.set_title("Cluster #{0} (1 element)".format(index+1))
 			tmp.plot(range(10), np.zeros(10))
-			tmp.scatter([0], [0])
+			tmp.scatter(range(10), np.ones(10)*correlations[0])
 		
 		
 		
@@ -1202,19 +1206,71 @@ def correlation_test(database, labels):
 			if ( item % 5 == 0):
 				minor_ticks.pop(i)
 		
-		tmp.set_xlabel("Glitch Number")
+		tmp.set_xlabel("Observation")
 		tmp.set_ylabel("Correlation Coefficients")
 		plt.autoscale(True, axis='x', tight=True)
 		plt.ylim((-1.05,1.05))
 		ax.append(tmp)
 		
 		
-	ax[0].set_title("Correlation Coefficients:\n Cluster #{0}".format(1))
-	fig.savefig("correlations.pdf", dpi = DPI, bbox_inches='tight', pad_inches=0.2)
+	ax[0].set_title("Correlation Coefficients:\n Cluster #{0}".format(1))	
+	dpi = fig.dpi()
+	fig.savefig("correlations.png", bbox_inches='tight', pad_inches=0.2)
+	
+	###
+	# Setup the clickable HTML file
+	
+	# Create an array with the x and y coordinates of the points
+	
+	xys = []
+	icoords = []
+	ixs = []
+	iys = []
+	for index, correlations in enumerate(cluster_correlations):
+		glitch_indexes = range(1, len(correlations)+1)
+		if (len(correlations) > 1):
+			xys.append(zip(glitch_indexes, correlations))
+		else:
+			xys.append((1, correlations[0]))
+		
+		ixs.append([0]*len(glitch_indexes))
+		iys.append([0]*len(glitch_indexes))
+		i = 0
+		for x, y in xys[-1]:
+			ixs[-1][i], iys[-1][i] = ax[index].transData.transform_point( [x, y])
+			i += 1
+		icoords.append(zip(ixs, iys))
+	
+	
+	# The minimal 'template' to generate an image map.
+	tmpl = """
+	<html><head><title>Correlations</title></head><body>
+	<img src="%s.png" usemap="#points" border="0">
+	<map name="points">%s</map>
+	</body></html>"""
+	
+	
+	if "time" in ANALYSIS:
+		fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
+	elif "frequency" in ANALYSIS:
+		fmt = "<area shape='circle' coords='%f,%f,2' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
+	else:
+		assert False, "Analyis not time or frequency. What are you trying to do?"
+		
+	# need to do height - y for the image-map
+	fmts = []
+	for index, infos in enumerate(info_list)
+		fmts.extend([fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])
+	
 	plt.close('all')
 	
-	print "\tSaved 'correlations.pdf'."
-
+	f = open("Correlations.html", "w")
+	print >> f, tmpl % ("Correlations", "\n".join(fmts))
+	f.close()
+	plt.close(fig)
+	print "\tSaved: Correlations.html"
+	
+	
 	return
 
 
