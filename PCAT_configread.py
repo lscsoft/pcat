@@ -476,11 +476,12 @@ def main():
             print "Retrieving locked segments..."
             locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
             locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
-        else:
+        elif (start_time < 1094947216):
             FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
-            
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
-           
+        else:
+            FLAG = "L1:DMT-DC_READOUT:1"
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
