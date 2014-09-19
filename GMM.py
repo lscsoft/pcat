@@ -571,7 +571,7 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 		if ( 'log' in ANALYSIS ):
 			ax_all.set_yscale('log')
 	else:
-		assert False, "Fatal error with analysis type. Quitting."
+		assert False, "Fatal error with analysis types."
 	plotlabels = []
 	
 	
@@ -585,8 +585,8 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 		polarities_plus_percent = []
 		polarities_minus_percent = []
 		for i in range(cluster_number):
-			polarities_plus_percent.append(100*polarities[index]['plus']/float(len(clusters[index])))
-			polarities_minus_percent.append(100*polarities[index]['minus']/float(len(clusters[index])))
+			polarities_plus_percent.append(  100 * ( polarities[i]['plus']/float(len(clusters[i])) ) )
+			polarities_minus_percent.append( 100 * ( polarities[i]['minus']/float(len(clusters[i])) ) )
 		
 	# Default line marker is a continous line, switch to
 	# dotted line if there are more than 7 types
