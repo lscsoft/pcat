@@ -389,6 +389,13 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			# are one-sided and are correctly normalized
 			spike.SNR = np.sqrt( 1.0 * (spike.psd/psd).sum()/psd.size )
 			
+			# Check spike polarity
+			if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
+				spike.polarity = 1
+			else:
+				spike.waveform *= -1
+				spike.polarity = -1
+			
 			# Save Spike object
 			spikes.append(spike)
 			

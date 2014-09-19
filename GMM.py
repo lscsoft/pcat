@@ -574,6 +574,20 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 		assert False, "Fatal error with analysis type. Quitting."
 	plotlabels = []
 	
+	
+	if ANALYSIS == "time":
+		polarities = [ {'plus': 0, 'minus': 0} for i in range(cluster_number)]
+		for index, spike in enumerate(database):
+			if (spike.polarity == 1):
+				polarities[labels[index]]['plus'] += 1
+			else:
+				polarities[labels[index]]['minus'] += 1
+		polarities_plus_percent = []
+		polarities_minus_percent = []
+		for i in range(cluster_number):
+			polarities_plus_percent.append(100*polarities[index]['plus']/float(len(clusters[index])))
+			polarities_minus_percent.append(100*polarities[index]['minus']/float(len(clusters[index])))
+		
 	# Default line marker is a continous line, switch to
 	# dotted line if there are more than 7 types
 	marker = "-"
@@ -620,7 +634,7 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				ax.plot(time_axis, element, 'b-', linewidth = 0.4 )
 				ax_all[index].plot(time_axis, element, "b-", linewidth = 0.4)
 				ax_all[index].autoscale(True, "both", tight=True)
-				ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent) )
+				ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			elif ( "generic" in ANALYSIS ):
 				fig = plt.figure()
 				ax = fig.add_subplot(111)
@@ -636,7 +650,7 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			output = str(cluster_number) + "-clusters_#" + str(index+1) + ".pdf"
 			plotlabels.append( "{0:d} ({1:.1f}%)".format(index+1, percent) )
 			
-			ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent) )
+			ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			if ( "frequency" in ANALYSIS):
 				plt.autoscale(True, axis="y", tight=True)
 			
@@ -887,15 +901,15 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 		
 		if f_sampl:
 			ax.set_xlim( ( x_min, x_max ) )
-			ax.plot( x_axis, spike.waveform, "b", label="Raw")
+			ax.plot( x_axis, spike.polarity*spike.waveform, "b", label="Raw")
 			labels_list.append("Raw time series")
 			ax.set_xlabel("Time [ms]")
 			ax.set_ylabel("Amplitude [counts] ")
 			if RECONSTRUCT:
-				ax.plot( x_axis, reconstructed[index], 'r', label="Reconstructed - {0} PCs".format(components_number))
+				ax.plot( x_axis, spike.polarity*reconstructed[index], 'r', label="Reconstructed - {0} PCs".format(components_number))
 				labels_list.append( "Reconstructed - {0} PCs".format(components_number) )
 				ax.legend(labels_list, loc = 'best', markerscale = 2, numpoints = 1)
-				ax1.plot( x_axis, spike.waveform, "b", label="Raw 2")
+				ax1.plot( x_axis, spike.polarity*spike.waveform, "b", label="Raw 2")
 				ax1.set_xlim( ( x_min, x_max ) )
 				ax1.set_xlabel("Time [ms]")
 				ax1.set_ylabel("Amplitude [counts] ")
@@ -904,7 +918,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 			plt.xlim( ( 0, waveform_length ) )
 			ax.plot(spike.waveform, label="Raw")
 			if RECONSTRUCT:
-				ax.plot( reconstructed[index], "r", label="Reconstructed - {0} PCs".format(components_number) )
+				ax.plot( spike.polarity*reconstructed[index], "r", label="Reconstructed - {0} PCs".format(components_number) )
 				labels_list.append( "Reconstructed - {0} PCs".format(components_number) )
 				ax.legend(labels_list, loc = 'best', markerscale = 2, numpoints = 1)
 				ax1.plot( x_axis, spike.waveform, "b", label="Raw" )
