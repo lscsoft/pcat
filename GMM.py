@@ -650,7 +650,10 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			output = str(cluster_number) + "-clusters_#" + str(index+1) + ".pdf"
 			plotlabels.append( "{0:d} ({1:.1f}%)".format(index+1, percent) )
 			
-			ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
+			if ("time" in ANALYSIS:
+				ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
+			else:
+				ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent))
 			if ( "frequency" in ANALYSIS):
 				plt.autoscale(True, axis="y", tight=True)
 			
