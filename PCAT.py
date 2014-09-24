@@ -1105,7 +1105,7 @@ def pipeline(args):
 				del time_series
 				
 				with open(out_file, "wb") as f:
-						np.save(f, conditioned)
+					np.save(f, conditioned)
 			
 			# Search the conditioned time series for transients
 			if (WHITEN and RESAMPLE and (sampling > ANALYSIS_FREQUENCY)):
@@ -1592,7 +1592,7 @@ def pipeline(args):
 		global glitchgram_start, glitchgram_end
 		if glitchgram_start and glitchgram_end:
 			plot_glitchgram(data_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, labels)
-			plot_glitchgram(data_list, times, stat_time, end_time, HIGH_PASS_CUTOFF, sampling, labels, name="Glitchgram_zoom")
+			plot_glitchgram(data_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, labels, name="Glitchgram_zoom")
 		else:
 			plot_glitchgram(data_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, labels)
 	
