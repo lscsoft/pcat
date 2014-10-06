@@ -157,7 +157,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
-                channel_processing_errors += "<b>Time Domain</b>: </br>"
+                channel_processing_errors += "<b>Time Domain</b>:</br>"
             errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
@@ -187,7 +187,7 @@ def run_PCAT_frequency(list_name, configuration):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
@@ -442,6 +442,9 @@ def main():
         print "IFO ('L' or 'H') has to be supplied. Quitting."
         exit()
     
+    # Call grid-proxy-init to initialize the robot cert
+    subprocess.call(["robot-proxy-init"])
+    
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
         out_name = str(opts.start)+"-"+str(opts.end)
@@ -464,26 +467,29 @@ def main():
         f.close()
         del tmp
     
-    if opts.IFO == 'L':
-        FLAG = "L1:DMT-SCIENCE:1"
-    else:
-        FLAG = "H1:DMT-SCIENCE:1"
-        
     if not opts.list:
-        try:
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
-        except:
-            print "Failed to retrieve locked segments, make sure your proxy certificate is loaded, by running"
-            print "ligo-proxy-init albert.einstein"
-            print "Replacing albert.eistein with your LIGO credentials"
-            exit()
-        
+        if (start_time < 1091836816):
+            FLAG_1 = "L1:DMT-XARM_LOCK:1"
+            FLAG_2 = "L1:DMT-YARM_LOCK:1"
+            FLAG_3 = "L1:DMT-PRC_LOCK:1"
+            # Get locked segments for each the three above flags:
+            print "Retrieving locked segments..."
+            locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
+            locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
+        elif (start_time < 1094947216):
+            FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
+        else:
+            FLAG = "L1:DMT-DC_READOUT:1"
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
         if (len(locked_times) > 0):
             for segment in locked_times:
-                f.write(str(int(segment[0]))+"\t"+str(int(segment[1]))+"\n")
+                # Add one second at the start and remove one second at the end of
+                # each segment to avoid pre-lock-loss transients
+                f.write(str(int(segment[0]+15))+"\t"+str(int(segment[1])-15)+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
