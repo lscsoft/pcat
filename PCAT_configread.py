@@ -29,13 +29,14 @@ import PCAT
 
 from string import join
 
-
 IMAGE_WIDTH = 1500
 DPI = 80
 IMAGE_HEIGHT = 2*DPI
 
 import optparse
 from gwpy.segments import (DataQualityFlag, DataQualityDict)
+
+plots_dir = "PCAT_cron"
 
 def parse_commandline():
     """
@@ -157,7 +158,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
-                channel_processing_errors += "<b>Time Domain</b>: </br>"
+                channel_processing_errors += "<b>Time Domain</b>:</br>"
             errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
@@ -187,7 +188,7 @@ def run_PCAT_frequency(list_name, configuration):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
@@ -225,6 +226,11 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
     except:
         analyzed_interval = results_frequency[results_frequency.keys()[0]]+ "Analyzed_interval.txt"
     
+    user_name = os.path.expanduser("~").split("/")[-1]
+    url_base = PCAT.get_server_url()
+    
+    plots_base = url_base + "~" + user_name + "/" + plots_dir + "/"
+    
     print >>output_file, """<html>
     <head>
         <title>Summary - {0}</title>
@@ -241,13 +247,13 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
         
         <br>
         <div align="center">  
-                <a href='{3}'><img src="./img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
+                <a href='{3}'><img src="{4}img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
             </div>
             
         <br>
         <br>
     <table border="1" style="text-align: left; width: 1200; height: 67px; margin-left:auto; margin-right: auto; background-color: white;" b\
-order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval)
+order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval, plots_base)
     
     
     print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
@@ -442,6 +448,9 @@ def main():
         print "IFO ('L' or 'H') has to be supplied. Quitting."
         exit()
     
+    # Call grid-proxy-init to initialize the robot cert
+    subprocess.call(["robot-proxy-init"])
+    
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
         out_name = str(opts.start)+"-"+str(opts.end)
@@ -464,26 +473,29 @@ def main():
         f.close()
         del tmp
     
-    if opts.IFO == 'L':
-        FLAG = "L1:DMT-SCIENCE"
-    else:
-        FLAG = "H1:DMT-SCIENCE"
-        
     if not opts.list:
-        try:
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
-        except:
-            print "Failed to retrieve locked segments, make sure your proxy certificate is loaded, by running"
-            print "ligo-proxy-init albert.einstein"
-            print "Replacing albert.eistein with your LIGO credentials"
-            exit()
-        
+        if (start_time < 1091836816):
+            FLAG_1 = "L1:DMT-XARM_LOCK:1"
+            FLAG_2 = "L1:DMT-YARM_LOCK:1"
+            FLAG_3 = "L1:DMT-PRC_LOCK:1"
+            # Get locked segments for each the three above flags:
+            print "Retrieving locked segments..."
+            locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
+            locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
+        elif (start_time < 1094947216):
+            FLAG = "L1:DMT-DC_READOUT_LOCKED:1"
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
+        else:
+            FLAG = "L1:DMT-DC_READOUT:1"
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
         if (len(locked_times) > 0):
             for segment in locked_times:
-                f.write(str(int(segment[0]))+"\t"+str(int(segment[1]))+"\n")
+                # Add one second at the start and remove one second at the end of
+                # each segment to avoid pre-lock-loss transients
+                f.write(str(int(segment[0]+15))+"\t"+str(int(segment[1])-15)+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
@@ -523,7 +535,7 @@ def main():
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
     
     # Get server name, username and then print summary page URL
-    server = PCAT.__get_server_url__()
+    server = PCAT.get_server_url()
     
     print "-"*40
     summary_URL = "{0}~{1}/PCAT_cron/{2}.html\n".format(server, user_name, os.path.basename(times_list))
