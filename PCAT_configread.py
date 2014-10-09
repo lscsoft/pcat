@@ -29,13 +29,14 @@ import PCAT
 
 from string import join
 
-
 IMAGE_WIDTH = 1500
 DPI = 80
 IMAGE_HEIGHT = 2*DPI
 
 import optparse
 from gwpy.segments import (DataQualityFlag, DataQualityDict)
+
+plots_dir = "PCAT_cron"
 
 def parse_commandline():
     """
@@ -225,6 +226,11 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
     except:
         analyzed_interval = results_frequency[results_frequency.keys()[0]]+ "Analyzed_interval.txt"
     
+    user_name = os.path.expanduser("~").split("/")[-1]
+    url_base = PCAT.get_server_url()
+    
+    plots_base = url_base + "~" + user_name + "/" + plots_dir + "/"
+    
     print >>output_file, """<html>
     <head>
         <title>Summary - {0}</title>
@@ -241,13 +247,13 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
         
         <br>
         <div align="center">  
-                <a href='{3}'><img src="./img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
+                <a href='{3}'><img src="{4}img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
             </div>
             
         <br>
         <br>
     <table border="1" style="text-align: left; width: 1200; height: 67px; margin-left:auto; margin-right: auto; background-color: white;" b\
-order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval)
+order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval, plots_base)
     
     
     print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
@@ -529,7 +535,7 @@ def main():
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
     
     # Get server name, username and then print summary page URL
-    server = PCAT.__get_server_url__()
+    server = PCAT.get_server_url()
     
     print "-"*40
     summary_URL = "{0}~{1}/PCAT_cron/{2}.html\n".format(server, user_name, os.path.basename(times_list))
