@@ -571,9 +571,23 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 		if ( 'log' in ANALYSIS ):
 			ax_all.set_yscale('log')
 	else:
-		assert False, "Fatal error with analysis type. Quitting."
+		assert False, "Fatal error with analysis types."
 	plotlabels = []
 	
+	
+	if ANALYSIS == "time":
+		polarities = [ {'plus': 0, 'minus': 0} for i in range(cluster_number)]
+		for index, spike in enumerate(database):
+			if (spike.polarity == 1):
+				polarities[labels[index]]['plus'] += 1
+			else:
+				polarities[labels[index]]['minus'] += 1
+		polarities_plus_percent = []
+		polarities_minus_percent = []
+		for i in range(cluster_number):
+			polarities_plus_percent.append(  100 * ( polarities[i]['plus']/float(len(clusters[i])) ) )
+			polarities_minus_percent.append( 100 * ( polarities[i]['minus']/float(len(clusters[i])) ) )
+		
 	# Default line marker is a continous line, switch to
 	# dotted line if there are more than 7 types
 	marker = "-"
@@ -620,7 +634,7 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				ax.plot(time_axis, element, 'b-', linewidth = 0.4 )
 				ax_all[index].plot(time_axis, element, "b-", linewidth = 0.4)
 				ax_all[index].autoscale(True, "both", tight=True)
-				ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent) )
+				ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			elif ( "generic" in ANALYSIS ):
 				fig = plt.figure()
 				ax = fig.add_subplot(111)
@@ -636,7 +650,10 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			output = str(cluster_number) + "-clusters_#" + str(index+1) + ".pdf"
 			plotlabels.append( "{0:d} ({1:.1f}%)".format(index+1, percent) )
 			
-			ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent) )
+			if ("time" in ANALYSIS):
+				ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
+			else:
+				ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index+1, len(clusters[index]), len(database), percent))
 			if ( "frequency" in ANALYSIS):
 				plt.autoscale(True, axis="y", tight=True)
 			
@@ -887,15 +904,15 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 		
 		if f_sampl:
 			ax.set_xlim( ( x_min, x_max ) )
-			ax.plot( x_axis, spike.waveform, "b", label="Raw")
+			ax.plot( x_axis, spike.polarity*spike.waveform, "b", label="Raw")
 			labels_list.append("Raw time series")
 			ax.set_xlabel("Time [ms]")
 			ax.set_ylabel("Amplitude [counts] ")
 			if RECONSTRUCT:
-				ax.plot( x_axis, reconstructed[index], 'r', label="Reconstructed - {0} PCs".format(components_number))
+				ax.plot( x_axis, spike.polarity*reconstructed[index], 'r', label="Reconstructed - {0} PCs".format(components_number))
 				labels_list.append( "Reconstructed - {0} PCs".format(components_number) )
 				ax.legend(labels_list, loc = 'best', markerscale = 2, numpoints = 1)
-				ax1.plot( x_axis, spike.waveform, "b", label="Raw 2")
+				ax1.plot( x_axis, spike.polarity*spike.waveform, "b", label="Raw 2")
 				ax1.set_xlim( ( x_min, x_max ) )
 				ax1.set_xlabel("Time [ms]")
 				ax1.set_ylabel("Amplitude [counts] ")
@@ -904,7 +921,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 			plt.xlim( ( 0, waveform_length ) )
 			ax.plot(spike.waveform, label="Raw")
 			if RECONSTRUCT:
-				ax.plot( reconstructed[index], "r", label="Reconstructed - {0} PCs".format(components_number) )
+				ax.plot( spike.polarity*reconstructed[index], "r", label="Reconstructed - {0} PCs".format(components_number) )
 				labels_list.append( "Reconstructed - {0} PCs".format(components_number) )
 				ax.legend(labels_list, loc = 'best', markerscale = 2, numpoints = 1)
 				ax1.plot( x_axis, spike.waveform, "b", label="Raw" )
@@ -1269,7 +1286,167 @@ def correlation_test(database, labels, ANALYSIS):
 	print >> f, tmpl % ("Types_correlations.png", "\n".join(fmts))
 	f.close()
 	plt.close(fig)
-	print "`\n\tSaved: Types_correlations.html"
+	print "\n\tSaved: Types_correlations.html"
+	
+	
+	return
+
+
+def matched_filtering_test(database, labels, ANALYSIS):
+	"""
+		Matched filtering test for the clusters (this is only useful for time domain analysis)
+		
+		Takes as input a PCAT database (python list) and gaussian_mixture() labels (list)
+		and tests for the goodness of the clustering using a correlation test with the average (median) waveforms 
+		
+	
+		A confidence level can probably be also implemented through the gmm class of scikit-learn.
+	"""
+	#TODO: check out GMM class functions sklearn.mixture.gmm, in particular gmm.predict_proba, gmm.score
+	#TODO: it would be interesting having GPS time on the x axis (they're already time-ordered though, since that's the way the orinal database is built)
+	
+	assert ANALYSIS == "time"
+	
+	# Create a database
+	cluster_number = len(np.unique(labels))
+	glitch_number = float(len(labels))
+	colored_database = [[] for i in range(cluster_number)]
+	info_list = [[] for i in range(cluster_number)]
+	for index, spike in enumerate(database):
+		colored_database[labels[index]].append(spike)
+		
+		# Save additional information used for the clickable html
+		if ( ANALYSIS == "time"):
+			info_list[labels[index]].append( ( labels[index]+1, spike.peak_GPS ) )
+		elif ( "frequency" in ANALYSIS):
+			info = "%s-%s" % (spike.segment_start, spike.segment_end )
+			info_list[labels[index]].append( ( labels[index]+1, info) )
+		elif ( "generic" in ANALYSIS ):
+			return
+		else:
+			assert False, "What are you trying to do? Only time, frequency and generic analysis are supported"
+	
+	# Compute a median for each cluster, used a representative
+	# time series for the cluster
+	representatives = []
+	# Compute inner products between representative and glitches
+	# for each type
+	cluster_matched_filters = []
+	
+	def inner_product(a, b):
+		""" Takes as input two numpy array and returns the inner product (\int a*b_conj)"""
+		# Factor of two because we're only integrating over positive frequencies
+		# and data is hermitian
+		inner_tmp = 2*np.real( a*b.conj() + b*a.conj()).sum()
+		# Normalize by the norm of a and b, multiplied by a 
+		# factor two because of the way inner product is defined (line above)
+		# there should be a sqrt(2) for both a and b
+		norm_a = 2 * np.sqrt((np.abs(a)**2).sum())
+		norm_b = 2 * np.sqrt((np.abs(b)**2).sum())
+		return inner_tmp/(norm_a*norm_b)
+		
+		
+	for index, cluster in enumerate(colored_database):
+		median = np.median([spike.waveform for spike in cluster], axis=0 )
+		representatives.append(median)
+		# np.corrcoef returns the correlation matrix, which is symmetric (2x2).
+		median_transform = np.fft.rfft(median)
+		spike_transforms = [np.fft.rfft(spike.waveform) for spike in cluster]
+		
+		# Factor of two because the ffts are one-sided and we're integrating over all frequencies
+		matched_filters = [inner_product(median_transform, spike_transform) for spike_transform in spike_transforms]
+		cluster_matched_filters.append(matched_filters)
+	
+	# Plot correlation coefficients:
+	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=100)
+	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
+	dpi = fig.get_dpi()
+	height = fig.get_figheight() * dpi
+	
+	ax = []
+	xys =  [ [] for i in range(cluster_number)]
+	icoords =  [ [] for i in range(cluster_number)]
+	
+	for index, match in enumerate(cluster_matched_filters):
+		# Create subplot and add it to the ax list
+		ax.append(fig.add_subplot(cluster_number, 1, index+1))
+		# Create x axis
+		glitch_indexes = range(1, len(match)+1)
+		
+		if (len(match) > 1):
+			ax[-1].plot(glitch_indexes, match, 'b.')
+		else:
+			ax[-1].set_title("Type #{0}: 1 element".format(index+1))
+			ax[-1].plot(range(10), np.zeros(10))
+			ax[-1].plot(range(10), np.zeros(10), "b.")
+		
+		# Save data for imagemap:
+		if (len(match) > 1):
+			xys[index] = zip(glitch_indexes, match)
+		else:
+			xys[index] = [(1, match[0])]
+		
+		ax[-1].set_title("Type #{0}: {1} of {2} ({3:.2f}%)".format(index+1, len(match), int(glitch_number), (len(match)/glitch_number)*100))
+		ax[-1].grid(which="both")
+		
+		ax[-1].set_xlabel("Observation")
+		ax[-1].set_ylabel("Matched filter")
+		plt.xlim((0, len(match)))
+		plt.ylim((-0.05,1.05))
+	
+	# Set title for the first subplot
+	ax[0].set_title("Normalized matched filter results:\nType #1 {0}/{1} ({2:.2f}%)".format(len(cluster_matched_filters[0]), int(glitch_number), (len(cluster_matched_filters[0])/glitch_number)*100))
+	
+	# Get image coordinates for each of the points plotted in the previous loop
+	for index, match in enumerate(cluster_matched_filters):
+		# x axis is the same as above
+		glitch_indexes = range(1, len(match)+1)
+		
+		# We have the same number of transformed coordinates as glitch_indexes
+		ixs = [0]*len(glitch_indexes)
+		iys = [0]*len(glitch_indexes)
+		
+		# Transform coordinates
+		i = 0
+		for x, y in xys[index]:
+			ixs[i], iys[i] = ax[index].transData.transform_point( [x, y])
+			i += 1
+		icoords[index] = zip(ixs, iys)
+	
+	# Save figure
+	fig.savefig("Types_matched_filtering.png", dpi=fig.get_dpi())
+	
+	###
+	# Setup the clickable HTML file	
+	
+	# The minimal 'template' to generate an image map:
+	tmpl = """
+	<html><head><title>Matched filtering</title></head><body>
+	<img src="%s" usemap="#points" border="0">
+	<map name="points">%s</map>
+	</body></html>"""
+	
+	
+	if "time" in ANALYSIS:
+		fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
+	elif "frequency" in ANALYSIS:
+		fmt = "<area shape='circle' coords='%f,%f,3' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
+	else:
+		assert False, "Analyis not time nor frequency. What are you trying to do?"
+		
+	# need to do height - y for the image-map
+	fmts = []
+	
+	for index, infos in enumerate(info_list):
+		fmts.extend([fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
+	
+	plt.close(fig)
+	
+	f = open("Types_matched_filtering.html", "w")
+	print >> f, tmpl % ("Types_matched_filtering.png", "\n".join(fmts))
+	f.close()
+	plt.close(fig)
+	print "\n\tSaved: Types_matched_filtering.html"
 	
 	
 	return

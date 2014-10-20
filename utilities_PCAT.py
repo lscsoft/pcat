@@ -390,7 +390,7 @@ def nearest_power_of_two(number):
 
 
 
-def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl, labels):
+def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl, labels, name="Glitchgram"):
 	"""
 	Plot a glitchgram of all the glitches in 'data' (a list of Spike() istances)
 	
@@ -648,18 +648,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	<map name="points">%s</map>
 	</body></html>"""
 	
-	
-	server = get_server_url() + "~" + os.path.expanduser("~").split("/")[-1] + "/"
-	
-	# Get the correct name for the working directory, starting from public_html
-	start = 0
-	split_cwd = os.getcwd().split("/")
-	for index, element in enumerate(split_cwd):
-		if (element == "public_html"):
-			start = index+1
-			break
-	directory = join(split_cwd[start:], "/") + "/"
-	
 	fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
 		
 	# need to do height - y for the image-map
@@ -667,12 +655,12 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	fmts1 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords1, info_list) ]	
 	fmts2 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords2, info_list) ]	
 	
-	fig.savefig("Glitchgram.png", dpi=fig.get_dpi()) # bbox_inches='tight', 
-	print "\tSaved: Glitchgram.html"
+	fig.savefig("{0}.png".format(name), dpi=fig.get_dpi()) # bbox_inches='tight', 
+	print "\tSaved: {0}.html".format(name)
 	plt.close('all')
 	
-	f = open("Glitchgram.html", "w")
-	print >> f, tmpl % ("Glitchgram", "\n".join(fmts+fmts1+fmts2))
+	f = open("{0}.html".format(name), "w")
+	print >> f, tmpl % ("{0}".format(name), "\n".join(fmts+fmts1+fmts2))
 	f.close()
 	
 
