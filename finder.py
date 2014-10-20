@@ -372,6 +372,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
 			#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
+			# Factor of two beause the numerator should be g(f)*g_conj(f) + g_conj(f)*g(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
