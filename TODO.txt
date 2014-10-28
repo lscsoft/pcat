@@ -4,7 +4,7 @@ To Fix:
  configuration file does not exist (plus error if the configuration file is malformed)
 - Change the colors (defined in utilites_PCAT.py) to one of matplotlib's colormap
   and change all of the plotting routines in GMM.py (scatterplot(),
-  calculate_types() + ?are there more?).
+  calculate_types() + ?are there more?). Possible solution: http://cl.ly/code/372r2p3R2T3B
 - PCAT.py: Wrap the part that plots the principal components into a single function to cleanup (also see below)
 - PCAT.py Change the way principal components are plotted, so that only MAX_ALL_PRINCIPAL_COMPONENTS
   are plotted in the summary plot for principal components, but up to components_n components
