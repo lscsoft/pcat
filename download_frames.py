@@ -19,7 +19,9 @@ import sys
 
 import getopt
 
+from glue import lal
 import pylal.frutils
+
 
 from utilities_PCAT import progressBar
 
@@ -217,7 +219,11 @@ def retrieve_timeseries(start_time, end_time, channel_name, IFO, frame_type):
 				@ 'fs' sampling frequency (float)
 				@'dt' sampling period, 1/fs (float)
 	"""
-	d = pylal.frutils.AutoqueryingFrameCache(frametype=frame_type, scratchdir=None)
+	
+	with open("/home/brethil/Jade_glitches/jade_frames.cache") as cachefile:
+		cache = lal.Cache.fromfile(cachefile)
+	d = pylal.frutils.FrameCache(cache)
+	
 	data = d.fetch(channel_name, start_time, end_time)
 	
 	time_series = {
