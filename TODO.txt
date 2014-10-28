@@ -20,6 +20,7 @@ To Fix:
 - spike_time_series: Fix labels for time series (raw -> whitened) and units (whitened=Hz^0.5)
 - Fix random number generator seed in order to have the same results for each run.
 - Exclude first 10 Hz in the PCA analysis for the frequency-domain analysis
+- write_summary_index.py -> Substitute relative links with absolute links, in order to prepare for the detchar summary pages
 
 To Implement:
 - Add xml file dumper to the end of PCAT.pipeline() (already in ETG_challenge branch)
@@ -32,3 +33,5 @@ To Implement:
     has a maximum.
 - Implement calendar in summary pages
 - Add wscan link generation to PCAT.pipeline()
+- Compress PCAT.pipeline()'s output (pickle database, see http://henrysmac.org/blog/2010/3/15/python-pickle-example-including-gzip-for-compression.html
+)
