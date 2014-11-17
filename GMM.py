@@ -1320,21 +1320,27 @@ def matched_filtering_test(database, labels, ANALYSIS):
 	
 	def inner_product(a, b):
 		""" Takes as input two numpy array and returns the inner product (\int a*b_conj)"""
-		inner_tmp = a*b.conj()/ (np.abs(a).sum()*np.abs(b).sum())
-		return inner_tmp.sum()
+		# Factor of two because we're only integrating over positive frequencies
+		# and data is hermitian
+		inner_tmp = 2*np.real( a*b.conj() + b*a.conj()).sum()
+		# Normalize by the norm of a and b, multiplied by a 
+		# factor two because of the way inner product is defined (line above)
+		# there should be a sqrt(2) for both a and b
+		norm_a = 2 * np.sqrt((np.abs(a)**2).sum())
+		norm_b = 2 * np.sqrt((np.abs(b)**2).sum())
+		return inner_tmp/(norm_a*norm_b)
 		
 		
 	for index, cluster in enumerate(colored_database):
 		median = np.median([spike.waveform for spike in cluster], axis=0 )
 		representatives.append(median)
 		# np.corrcoef returns the correlation matrix, which is symmetric (2x2).
-		# on the diagonal we have the autocorrelations, off diagonal we have the cross correlation
-		# which is what we're interested in.
 		median_transform = np.fft.rfft(median)
 		spike_transforms = [np.fft.rfft(spike.waveform) for spike in cluster]
 		
-		
-		cluster_matched_filters.append([inner_product(median_transform, spike_transform)] for spike_transform in spike_transforms)
+		# Factor of two because the ffts are one-sided and we're integrating over all frequencies
+		matched_filters = [inner_product(median_transform, spike_transform) for spike_transform in spike_transforms]
+		cluster_matched_filters.append(matched_filters)
 	
 	# Plot correlation coefficients:
 	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=100)
@@ -1371,7 +1377,7 @@ def matched_filtering_test(database, labels, ANALYSIS):
 		ax[-1].set_xlabel("Observation")
 		ax[-1].set_ylabel("Matched filter")
 		plt.xlim((0, len(match)))
-		plt.ylim((-1.05,1.05))
+		plt.ylim((-0.05,1.05))
 	
 	# Set title for the first subplot
 	ax[0].set_title("Normalized matched filter results:\nType #1 {0}/{1} ({2:.2f}%)".format(len(cluster_matched_filters[0]), int(glitch_number), (len(cluster_matched_filters[0])/glitch_number)*100))
