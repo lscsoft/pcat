@@ -1,18 +1,10 @@
-Things to implement/fix, in no particular order
-- Add xml file dumper to the end of PCAT.pipeline()
-- Implement a real python package (__version__, __author__, etc)
-- Glitch classification confidence level, using the methods of sklearn.mixture.gmm
+To Fix:
 - PCAT_configread: Switch the configurations files to .ini and use python ConfigParse
 - PCAT_configread: Include a default configuration and a fallback to default when the supplied
  configuration file does not exist (plus error if the configuration file is malformed)
-- Find an authomatic method to choose the number of principal components used
-    when clustering, the ideal would be finding the knee of the curve.
-    This should me the point at which the curvature:
-        K(x) = |f''(x)|/{1+[f'(x)]^2}^(3/2)
-    has a maximum.
 - Change the colors (defined in utilites_PCAT.py) to one of matplotlib's colormap
   and change all of the plotting routines in GMM.py (scatterplot(),
-  calculate_types() + ?are there more?).
+  calculate_types() + ?are there more?). Possible solution: http://cl.ly/code/372r2p3R2T3B
 - PCAT.py: Wrap the part that plots the principal components into a single function to cleanup (also see below)
 - PCAT.py Change the way principal components are plotted, so that only MAX_ALL_PRINCIPAL_COMPONENTS
   are plotted in the summary plot for principal components, but up to components_n components
@@ -20,3 +12,26 @@ Things to implement/fix, in no particular order
 - GMM.py Check whether the latest version of scikit-learn includes better clustering/classifying routines, which can replace gaussian_mixture()
 - Rewrite PCAT.py parses to use argparse
 - utilities_PCAT: glitchgram() make the title of the title of the first glitchgram clickable (linking to the loudest glitch's time series)
+- utilities_PCAT: Fix SNR labels in glitchgrams
+- GMM.py: in main() -> Replace SILEN with SILENT (it's a typo)
+- Add titles to html pages
+- PCAT.pipeline() compress output database
+- PCAT.py: Merge correlation_test() with calculate_types()
+- spike_time_series: Fix labels for time series (raw -> whitened) and units (whitened=Hz^0.5)
+- Fix random number generator seed in order to have the same results for each run.
+- Exclude first 10 Hz in the PCA analysis for the frequency-domain analysis
+- write_summary_index.py -> Substitute relative links with absolute links, in order to prepare for the detchar summary pages
+
+To Implement:
+- Add xml file dumper to the end of PCAT.pipeline() (already in ETG_challenge branch)
+- Implement a real python package (__version__, __author__, etc)
+- Glitch classification confidence level, using the methods of sklearn.mixture.gmm
+- Find an authomatic method to choose the number of principal components used
+    when clustering, the ideal would be finding the knee of the curve.
+    This should me the point at which the curvature:
+        K(x) = |f''(x)|/{1+[f'(x)]^2}^(3/2)
+    has a maximum.
+- Implement calendar in summary pages
+- Add wscan link generation to PCAT.pipeline()
+- Compress PCAT.pipeline()'s output (pickle database, see http://henrysmac.org/blog/2010/3/15/python-pickle-example-including-gzip-for-compression.html
+)
