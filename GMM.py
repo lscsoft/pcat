@@ -632,6 +632,8 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 			elif ( "time" in ANALYSIS ):
 				fig, ax = set_axes_time(time_axis)
 				ax.plot(time_axis, element, 'b-', linewidth = 0.4 )
+				maximum_index = np.argmax(np.abs(element))
+				element[maximum_index] = (element[maximum_index-1]+element[maximum_index+1])/2.0
 				ax_all[index].plot(time_axis, element, "b-", linewidth = 0.4)
 				ax_all[index].autoscale(True, "both", tight=True)
 				ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index+1, len(clusters[index]), len(database), percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
