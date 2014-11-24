@@ -399,6 +399,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	start_time and end_time are the earliest and the latest GPS times
 	
 	"""
+	global units
 	DPI = 100
 	fig = plt.figure(figsize=(12,3*6), dpi=DPI)
 	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
