@@ -55,7 +55,7 @@ from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 4
+PARALLEL_PROCESSES = 12
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -118,7 +118,7 @@ from data_conditioning import *
 
 from finder import find_spikes
 from PCA import PCA, create_data_matrix, eigensystem, matrix_whiten
-from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, correlation_test
+from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
 from GMM import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
 def __usage__():
@@ -621,7 +621,7 @@ def __check_options_and_args__(argv):
 
 
 
-def __get_server_url__():
+def get_server_url():
 	"""
 		This retrieves the hostname on the server this program is being run on
 		in order to give an URL for the output of PCAT.
@@ -769,7 +769,7 @@ def pipeline(args):
 	###########################################################################
 	
 	# Server definition
-	server = __get_server_url__()
+	server = get_server_url()
 	username = os.path.basename(os.path.expanduser("~"))
 	original_wd = os.path.abspath(".")
 	
@@ -1105,7 +1105,7 @@ def pipeline(args):
 				del time_series
 				
 				with open(out_file, "wb") as f:
-						np.save(f, conditioned)
+					np.save(f, conditioned)
 			
 			# Search the conditioned time series for transients
 			if (WHITEN and RESAMPLE and (sampling > ANALYSIS_FREQUENCY)):
@@ -1430,8 +1430,15 @@ def pipeline(args):
 	
 	print_cluster_info(colored_clusters)	
 	
-	correlation_test(data_list, labels, ANALYSIS)
-		
+	if ("frequency" in ANALYSIS):
+		correlation_test(data_list, labels, ANALYSIS)
+	elif (ANALYSIS == "time"):
+		matched_filtering_test(data_list, labels, ANALYSIS)
+	elif ( ANALYSIS == "generic"):
+		pass
+	else:
+		assert False, "Wrong analysis type"
+	
 	# Save scatterplot with image maps:
 	# images are saved to a subfolder, "Scatterplot_images", defined in 
 	# scatterplot()
@@ -1585,6 +1592,8 @@ def pipeline(args):
 		global glitchgram_start, glitchgram_end
 		if glitchgram_start and glitchgram_end:
 			plot_glitchgram(data_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, labels)
+			for segments in times:
+				plot_glitchgram(data_list, [segments], segments[0], segments[1], HIGH_PASS_CUTOFF, sampling, labels, name="Glitchgram_{0}-{1}".format(segments[0], segments[1]))
 		else:
 			plot_glitchgram(data_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, labels)
 	
