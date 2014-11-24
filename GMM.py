@@ -631,6 +631,9 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				
 			elif ( "time" in ANALYSIS ):
 				fig, ax = set_axes_time(time_axis)
+				
+				maximum_index = np.argmax(np.abs(element))
+				element[maximum_index] = (element[maximum_index-1]+element[maximum_index+1])/2.0
 				ax.plot(time_axis, element, 'b-', linewidth = 0.4 )
 				ax_all[index].plot(time_axis, element, "b-", linewidth = 0.4)
 				ax_all[index].autoscale(True, "both", tight=True)
