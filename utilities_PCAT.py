@@ -387,7 +387,18 @@ def nearest_power_of_two(number):
 		i*=2
 	return i
 
-
+def tformat(x, start_time):
+	"""tick formatter definition"""
+	global units
+	x -= start_time
+	if units == "h":
+		x /= 3600.0
+	elif units == "m":
+		x /= 60.0
+	elif units == "d":
+		x /= 24.0
+	tick = "{0:.1f}{1}".format(x, units)
+	return tick
 
 
 def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl, labels, name="Glitchgram"):
@@ -399,7 +410,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	start_time and end_time are the earliest and the latest GPS times
 	
 	"""
-	global units
 	DPI = 100
 	fig = plt.figure(figsize=(12,3*6), dpi=DPI)
 	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
@@ -409,25 +419,13 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax.set_xlabel("Time since GPS time {0}".format(start_time))
 	ax.set_ylabel("Frequency [Hz]")
 	ax.set_yscale('log')
-	
+	global units
 	if (end_time-start_time)>4*3600:
 		units = "h" # hours
 	elif (end_time-start_time)>5*60:
 		units = "m" # minutes
 	elif (end_time-start_time>3*86400):
 		units = "d" # days
-	
-	def tformat(x):
-		"""tick formatter definition"""
-		x -= start_time
-		if units == "h":
-			x /= 3600.0
-		elif units == "m":
-			x /= 60.0
-		elif units == "d":
-			x /= 24.0
-		tick = "{0:.1f}{1}".format(x, units)
-		return tick
 	
 	time_axis = []
 	peak_frequencies = []
@@ -459,14 +457,14 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	x_ticks = [start_time]
 	x_ticks_labels = ["0"]
 	interval = end_time-start_time
-	step = (interval)//16
+	step = (interval)//15
 	
 	range_end = end_time
-	for i in range(start_time+step, range_end, step):
+	for i in range(start_time+step, range_end-step, step):
 		x_ticks.append(i)
-		x_ticks_labels.append(tformat(i))
+		x_ticks_labels.append(tformat(i, start_time))
 	x_ticks.append(end_time)
-	x_ticks_labels.append(tformat(end_time))
+	x_ticks_labels.append(tformat(end_time, start_time))
 	
 	ax.set_xticks(x_ticks)
 	ax.set_xticklabels(x_ticks_labels, fontsize=12)
@@ -529,6 +527,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		y_lim_min = np.min(SNRs)
 	ax3.set_ylim( (y_lim_min, np.max(SNRs)*10) )
 	ax3.set_xticks(x_ticks)
+	ax3.set_xlim((start_time, end_time))
 	plt.xticks(x_ticks, x_ticks_labels, fontsize=12)
 	ax3.set_ylabel("SNR")	
 	# Resize ax3 to have the same dimensions as ax, which is smaller
