@@ -121,7 +121,7 @@ from PCA import PCA, create_data_matrix, eigensystem, matrix_whiten
 from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
 from GMM import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
-def __usage__():
+def usage():
 	'''
 		Usage
 	'''
@@ -314,7 +314,7 @@ def __usage__():
 # Helper routines:           #
 ##############################
 	
-def __check_options_and_args__(argv):
+def check_options_and_args(argv):
 	global components_number, psd_overlap, max_clusters, segment_size, download_overlap
 	global LIST, CUSTOM_OUT, FILTER , WHITEN, HIGH_PASS, HIGH_PASS_CUTOFF, SAVE_TIMESERIES, NORESAMPLE, RESAMPLE
 	global HIGH_PASS
@@ -360,7 +360,7 @@ def __check_options_and_args__(argv):
 	
 	if len(argv[1:]) == 0:
 		print "No arguments."
-		__usage__()
+		usage()
 		sys.exit(1)
 	try:
 		opts, args = getopt.getopt(argv[1:], "hc:I:v:t:m:", [ "help", 'threshold=', 'channel=', 'IFO=',\
@@ -378,7 +378,7 @@ def __check_options_and_args__(argv):
 	# option processing
 	for option, value in opts:
 		if option in ( "-h", "--help" ):
-			__usage__()
+			usage()
 			sys.exit(1)
 		elif option in ( "-v", "--variables" ):
 			variables = int(value)
@@ -649,7 +649,7 @@ def get_server_url():
 	return server
 
 
-def __print_parameters__():
+def print_parameters():
 	'''
 	This function prints the parameters of the run.
 	'''
@@ -762,7 +762,7 @@ def __print_parameters__():
 
 def pipeline(args):
 	global sampling
-	__check_options_and_args__(args)
+	check_options_and_args(args)
 	
 	###########################################################################
 	# General setup 			 											  #
@@ -918,8 +918,8 @@ def pipeline(args):
 	
 	# Create results folder URL address
 	results_URL = "{0}~{1}/{2}".format(server, username, OUTPUT)
-	# Print parameters parsed by __check_options_and_args__()
-	__print_parameters__()
+	# Print parameters parsed by check_options_and_args()
+	print_parameters()
 	
 	print "Saved URL:\n  {0}\n".format(results_URL + "parameters.txt")
 	
@@ -929,7 +929,7 @@ def pipeline(args):
 	sys.stdout = f
 	# Print parameters: these will be written to the open file 'f'
 	# due to 'sys.stdout = f'
-	__print_parameters__()
+	print_parameters()
 	# 'args' is just a list, use join to join the list into a string
 	# separated by a single space (s.join(iterable) returns a string
 	# with the elements in args separated by the content of 's')

@@ -75,7 +75,7 @@ HIGH_PASS_CUTOFF = 40.0
 # dt is the sampling period, df=1/(N*dt), N is the number of points
 # of s: N=len(s)
 
-def __usage__():
+def usage():
 	'''
 		Usage
 	'''
@@ -117,7 +117,7 @@ def __usage__():
 	
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global PLOT
 	PLOT = False
 	global PICKLED
@@ -146,7 +146,7 @@ def __check_options_and_args__():
 			sys.exit(1)
 		for o, a in opts:
 			if o in ( [ '-h', '--help' ] ):
-				__usage__()
+				usage()
 				sys.exit()
 			elif o in ( [ '-s', '--sampling' ] ):
 				SAMPLING_FREQUENCY = float(a)
@@ -667,7 +667,7 @@ def median_bias_factor(n):
 
 def main():
 	global excluded_seconds
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	
 	
 	# Create a progress bar

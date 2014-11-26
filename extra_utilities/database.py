@@ -19,7 +19,7 @@ from utilities_PCAT import *
 global frame_width
 frame_width = 78
 
-def __usage__():
+def usage():
 	"""
 		Usage
 	"""
@@ -69,7 +69,7 @@ def __usage__():
 	print "\t--silent\n\t\tSilent, do not print output on std outoput."
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global PICKLED
 	PICKLED = True
 	global INPUT, CUSTOM_OUTPUT, OUTPUT_NAME
@@ -78,7 +78,7 @@ def __check_options_and_args__():
 	SILENT = False
 	if ( len( sys.argv[1:] ) == 0 ):
 		print "No arguments given."
-		__usage__()
+		usage()
 		sys.exit(0)
 	else:
 		try:
@@ -93,7 +93,7 @@ def __check_options_and_args__():
 			if o in ( '--ascii' ):
 				PICKLED = False
 			elif o in ( '-h', '--help' ):
-				__usage__()
+				usage()
 				sys.exit(0)
 			elif o in ( '-o', '--output' ):
 				CUSTOM_OUTPUT = True
@@ -258,7 +258,7 @@ def load_list(data, pickled):
 
 
 def __main__():
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	if not SILENT:
 		print "Loading data and creating database..."
 	if ( INPUT == 'merge'):
