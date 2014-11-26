@@ -908,7 +908,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 		if f_sampl:
 			ax.set_xlim( ( x_min, x_max ) )
 			ax.plot( x_axis, spike.polarity*spike.waveform, "b", label="Raw")
-			labels_list.append("Raw time series")
+			labels_list.append("Time series")
 			ax.set_xlabel("Time [ms]")
 			ax.set_ylabel("Amplitude [counts] ")
 			if RECONSTRUCT:
