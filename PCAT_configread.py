@@ -528,7 +528,7 @@ def main():
         
     print "-"*40
     # Define output URL
-    summary_URL = "{0}/{2}.html\n".format(base_URL, os.path.basename(times_list))
+    summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))
     
     print "Done! Summary at:\n{0}".format(summary_URL)
     
