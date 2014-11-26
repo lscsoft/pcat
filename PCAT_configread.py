@@ -227,13 +227,13 @@ def print_html_table(list_path, output_dir, base_URL, results_time=None, results
     
     print >>output_file, """<html>
     <head>
-        <title>Summary - {0}</title>
+        <title>PCAT Summary - {0}</title>
     </head>
     <body>
     <span><table style="text-align: left; width: 1100; height: 100   px; margin-left:auto; margin-right: auto;" border="1" cellpadding="1" cellspacing="1">
         <tbody>
         <tr>
-        <td style="text-align: center; vertical-align: top; background-color:SpringGreen;"><big><big><big><big><span style="font-weight: bold;">Summary Page - {0}</span></big></big></big></big>
+        <td style="text-align: center; vertical-align: top; background-color:SpringGreen;"><big><big><big><big><span style="font-weight: bold;">PCAT Summary Page - {0}</span></big></big></big></big>
         </td>
         </tr>
         </tbody>
