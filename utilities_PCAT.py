@@ -387,10 +387,21 @@ def nearest_power_of_two(number):
 		i*=2
 	return i
 
+def tformat(x, start_time):
+	"""tick formatter definition"""
+	global units
+	x -= start_time
+	if units == "h":
+		x /= 3600.0
+	elif units == "m":
+		x /= 60.0
+	elif units == "d":
+		x /= 24.0
+	tick = "{0:.1f}{1}".format(x, units)
+	return tick
 
 
-
-def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl, labels):
+def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl, labels, name="Glitchgram"):
 	"""
 	Plot a glitchgram of all the glitches in 'data' (a list of Spike() istances)
 	
@@ -408,25 +419,13 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	ax.set_xlabel("Time since GPS time {0}".format(start_time))
 	ax.set_ylabel("Frequency [Hz]")
 	ax.set_yscale('log')
-	
+	global units
 	if (end_time-start_time)>4*3600:
 		units = "h" # hours
 	elif (end_time-start_time)>5*60:
 		units = "m" # minutes
 	elif (end_time-start_time>3*86400):
 		units = "d" # days
-	
-	def tformat(x):
-		"""tick formatter definition"""
-		x -= start_time
-		if units == "h":
-			x /= 3600.0
-		elif units == "m":
-			x /= 60.0
-		elif units == "d":
-			x /= 24.0
-		tick = "{0:.1f}{1}".format(x, units)
-		return tick
 	
 	time_axis = []
 	peak_frequencies = []
@@ -458,14 +457,14 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	x_ticks = [start_time]
 	x_ticks_labels = ["0"]
 	interval = end_time-start_time
-	step = (interval)//16
+	step = (interval)//15
 	
 	range_end = end_time
-	for i in range(start_time+step, range_end, step):
+	for i in range(start_time+step, range_end-step, step):
 		x_ticks.append(i)
-		x_ticks_labels.append(tformat(i))
+		x_ticks_labels.append(tformat(i, start_time))
 	x_ticks.append(end_time)
-	x_ticks_labels.append(tformat(end_time))
+	x_ticks_labels.append(tformat(end_time, start_time))
 	
 	ax.set_xticks(x_ticks)
 	ax.set_xticklabels(x_ticks_labels, fontsize=12)
@@ -528,6 +527,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		y_lim_min = np.min(SNRs)
 	ax3.set_ylim( (y_lim_min, np.max(SNRs)*10) )
 	ax3.set_xticks(x_ticks)
+	ax3.set_xlim((start_time, end_time))
 	plt.xticks(x_ticks, x_ticks_labels, fontsize=12)
 	ax3.set_ylabel("SNR")	
 	# Resize ax3 to have the same dimensions as ax, which is smaller
@@ -648,18 +648,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	<map name="points">%s</map>
 	</body></html>"""
 	
-	
-	server = get_server_url() + "~" + os.path.expanduser("~").split("/")[-1] + "/"
-	
-	# Get the correct name for the working directory, starting from public_html
-	start = 0
-	split_cwd = os.getcwd().split("/")
-	for index, element in enumerate(split_cwd):
-		if (element == "public_html"):
-			start = index+1
-			break
-	directory = join(split_cwd[start:], "/") + "/"
-	
 	fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
 		
 	# need to do height - y for the image-map
@@ -667,12 +655,12 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	fmts1 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords1, info_list) ]	
 	fmts2 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords2, info_list) ]	
 	
-	fig.savefig("Glitchgram.png", dpi=fig.get_dpi()) # bbox_inches='tight', 
-	print "\tSaved: Glitchgram.html"
+	fig.savefig("{0}.png".format(name), dpi=fig.get_dpi()) # bbox_inches='tight', 
+	print "\tSaved: {0}.html".format(name)
 	plt.close('all')
 	
-	f = open("Glitchgram.html", "w")
-	print >> f, tmpl % ("Glitchgram", "\n".join(fmts+fmts1+fmts2))
+	f = open("{0}.html".format(name), "w")
+	print >> f, tmpl % ("{0}".format(name), "\n".join(fmts+fmts1+fmts2))
 	f.close()
 	
 

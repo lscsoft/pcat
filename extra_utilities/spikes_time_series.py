@@ -6,7 +6,7 @@
 from utilities_PCAT import *
 
 
-def __usage__():
+def usage():
 	print "Usage:\tspikes_time_series.py [options] file1 file2 file3 ...\n\
 		file1, file2, file3,... should be finder.py databases.\n\
 		Plot all the transients in the database."
@@ -19,13 +19,13 @@ def __usage__():
 		Sampling frequency"
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global output, sampling_frequency
 	sampling_frequency = 0
 	output = "./"
 	if ( len(sys.argv[1:]) == 0 ):
 		print "No arguments given."
-		__usage__()
+		usage()
 		sys.exit(1)
 	else:
 		try:
@@ -37,7 +37,7 @@ def __check_options_and_args__():
 			if o in ( '--output' ):
 				output = a
 			elif o in ( '-h', '--help'):
-				__usage__()
+				usage()
 				sys.exit(1)
 			elif o in ( '--sampling'):
 				sampling_frequency = float(a)
@@ -47,7 +47,7 @@ def __check_options_and_args__():
 
 
 def __main__():
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	spikes_list = list()
 	for element in args:
 		f = open( element , "rb" )

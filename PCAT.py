@@ -55,7 +55,7 @@ from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 4
+PARALLEL_PROCESSES = 12
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -118,10 +118,10 @@ from data_conditioning import *
 
 from finder import find_spikes
 from PCA import PCA, create_data_matrix, eigensystem, matrix_whiten
-from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series
+from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
 from GMM import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
-def __usage__():
+def usage():
 	'''
 		Usage
 	'''
@@ -314,7 +314,7 @@ def __usage__():
 # Helper routines:           #
 ##############################
 	
-def __check_options_and_args__(argv):
+def check_options_and_args(argv):
 	global components_number, psd_overlap, max_clusters, segment_size, download_overlap
 	global LIST, CUSTOM_OUT, FILTER , WHITEN, HIGH_PASS, HIGH_PASS_CUTOFF, SAVE_TIMESERIES, NORESAMPLE, RESAMPLE
 	global HIGH_PASS
@@ -360,7 +360,7 @@ def __check_options_and_args__(argv):
 	
 	if len(argv[1:]) == 0:
 		print "No arguments."
-		__usage__()
+		usage()
 		sys.exit(1)
 	try:
 		opts, args = getopt.getopt(argv[1:], "hc:I:v:t:m:", [ "help", 'threshold=', 'channel=', 'IFO=',\
@@ -378,7 +378,7 @@ def __check_options_and_args__(argv):
 	# option processing
 	for option, value in opts:
 		if option in ( "-h", "--help" ):
-			__usage__()
+			usage()
 			sys.exit(1)
 		elif option in ( "-v", "--variables" ):
 			variables = int(value)
@@ -621,7 +621,7 @@ def __check_options_and_args__(argv):
 
 
 
-def __get_server_url__():
+def get_server_url():
 	"""
 		This retrieves the hostname on the server this program is being run on
 		in order to give an URL for the output of PCAT.
@@ -649,7 +649,7 @@ def __get_server_url__():
 	return server
 
 
-def __print_parameters__():
+def print_parameters():
 	'''
 	This function prints the parameters of the run.
 	'''
@@ -762,14 +762,14 @@ def __print_parameters__():
 
 def pipeline(args):
 	global sampling
-	__check_options_and_args__(args)
+	check_options_and_args(args)
 	
 	###########################################################################
 	# General setup 			 											  #
 	###########################################################################
 	
 	# Server definition
-	server = __get_server_url__()
+	server = get_server_url()
 	username = os.path.basename(os.path.expanduser("~"))
 	original_wd = os.path.abspath(".")
 	
@@ -918,8 +918,8 @@ def pipeline(args):
 	
 	# Create results folder URL address
 	results_URL = "{0}~{1}/{2}".format(server, username, OUTPUT)
-	# Print parameters parsed by __check_options_and_args__()
-	__print_parameters__()
+	# Print parameters parsed by check_options_and_args()
+	print_parameters()
 	
 	print "Saved URL:\n  {0}\n".format(results_URL + "parameters.txt")
 	
@@ -929,7 +929,7 @@ def pipeline(args):
 	sys.stdout = f
 	# Print parameters: these will be written to the open file 'f'
 	# due to 'sys.stdout = f'
-	__print_parameters__()
+	print_parameters()
 	# 'args' is just a list, use join to join the list into a string
 	# separated by a single space (s.join(iterable) returns a string
 	# with the elements in args separated by the content of 's')
@@ -1105,7 +1105,7 @@ def pipeline(args):
 				del time_series
 				
 				with open(out_file, "wb") as f:
-						np.save(f, conditioned)
+					np.save(f, conditioned)
 			
 			# Search the conditioned time series for transients
 			if (WHITEN and RESAMPLE and (sampling > ANALYSIS_FREQUENCY)):
@@ -1429,7 +1429,16 @@ def pipeline(args):
 		spike.type = labels[index]
 	
 	print_cluster_info(colored_clusters)	
-		
+	
+	if ("frequency" in ANALYSIS):
+		correlation_test(data_list, labels, ANALYSIS)
+	elif (ANALYSIS == "time"):
+		matched_filtering_test(data_list, labels, ANALYSIS)
+	elif ( ANALYSIS == "generic"):
+		pass
+	else:
+		assert False, "Wrong analysis type"
+	
 	# Save scatterplot with image maps:
 	# images are saved to a subfolder, "Scatterplot_images", defined in 
 	# scatterplot()
@@ -1583,6 +1592,8 @@ def pipeline(args):
 		global glitchgram_start, glitchgram_end
 		if glitchgram_start and glitchgram_end:
 			plot_glitchgram(data_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, labels)
+			for segments in times:
+				plot_glitchgram(data_list, [segments], segments[0], segments[1], HIGH_PASS_CUTOFF, sampling, labels, name="Glitchgram_{0}-{1}".format(segments[0], segments[1]))
 		else:
 			plot_glitchgram(data_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, labels)
 	

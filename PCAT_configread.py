@@ -199,7 +199,7 @@ def run_PCAT_frequency(list_name, configuration):
     
     return results
 
-def print_html_table(list_path, output_dir, results_time=None, results_frequency=None):
+def print_html_table(list_path, output_dir, base_URL, results_time=None, results_frequency=None):
     global channel_processing_errors
     try:
         os.makedirs( output_dir )
@@ -241,13 +241,13 @@ def print_html_table(list_path, output_dir, results_time=None, results_frequency
         
         <br>
         <div align="center">  
-                <a href='{3}'><img src="./img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
+                <a href='{3}'><img src="{4}/img/lock-plot_{0}.png" alt="{0} Locked Plot" width="{1}" height="{2}" align="middle"></a>
             </div>
             
         <br>
         <br>
     <table border="1" style="text-align: left; width: 1200; height: 67px; margin-left:auto; margin-right: auto; background-color: white;" b\
-order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval)
+order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col width=120><col width=120><col width=170> <col width=120><col width=200>""".format(list_name, int(IMAGE_WIDTH*0.75), int(IMAGE_HEIGHT*0.75), analyzed_interval, base_URL)
     
     
     print >>output_file, "<tr><th>Channel name</th><th align='right'>Time Domain</th><th align='right'>Glitchgram</th><th align='right'>Time Domain parameters</th><th align='right'>Frequency Domain</th><th align='right'>Frequency Domain parameters</th></tr>"
@@ -301,8 +301,8 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     
     
     # Final touch: add configuration files, original command, error list, then close html file tags
-    config_time = "/misc/config_{0}_time.txt".format(list_name)
-    config_frequency = "/misc/config_{0}_frequency.txt".format(list_name)
+    config_time = "{0}/misc/config_{1}_time.txt".format(base_URL, list_name)
+    config_frequency = "{0}/misc/config_{1}_frequency.txt".format(base_URL, list_name)
     
     configstring = "Configuration files: "
     if not (os.path.exists(output_dir + config_time)):
@@ -428,6 +428,10 @@ def main():
     user_name = os.path.expanduser("~").split("/")[-1]
     output_dir = os.path.expanduser("/home/"+user_name+"/public_html/PCAT_cron")
     
+    # Define base URLs
+    server = PCAT.get_server_url()
+    base_URL = "{0}~{1}/PCAT_cron".format(server, user_name)
+    
     
     try:
         os.makedirs(output_dir)
@@ -465,9 +469,9 @@ def main():
         del tmp
     
     if opts.IFO == 'L':
-        FLAG = "L1:DMT-SCIENCE"
+        FLAG = "L1:DMT-SCIENCE:1"
     else:
-        FLAG = "H1:DMT-SCIENCE"
+        FLAG = "H1:DMT-SCIENCE:1"
         
     if not opts.list:
         try:
@@ -521,12 +525,11 @@ def main():
     
     # Write lock_plot
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
-    
-    # Get server name, username and then print summary page URL
-    server = PCAT.__get_server_url__()
-    
+        
     print "-"*40
-    summary_URL = "{0}~{1}/PCAT_cron/{2}.html\n".format(server, user_name, os.path.basename(times_list))
+    # Define output URL
+    summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))
+    
     print "Done! Summary at:\n{0}".format(summary_URL)
     
     from write_summaries_index import main as final_touch

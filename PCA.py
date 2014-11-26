@@ -14,7 +14,7 @@ global frame_width
 frame_width = 80
 
 
-def __usage__():
+def usage():
 	print "Usage:   PCA.py --time || --frequency [-s] [--extras number] "
 	print "\t\t [...] file1 file2 file3"
 	print ""
@@ -39,7 +39,7 @@ def __usage__():
 	print "\t\t in the scatterplots, default up to the 3rd component."
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	'''
 	This function parses options and arguments.
 	'''
@@ -85,12 +85,12 @@ def __check_options_and_args__():
 	
 	if ( len(sys.argv[1:]) == 0 and not (any( flag in o for flag in [ '--help', '-h'] for o in opts)) ) :
 		print "No arguments."
-		__usage__()
+		usage()
 		sys.exit(0)
 	
 	for o, a in opts:
 		if o in ( '-h', '--help' ):
-			__usage__()
+			usage()
 			sys.exit(1)
 		elif o in ('--startspike', '--endspike'):
 			CUSTOM_RANGE = True
@@ -403,7 +403,7 @@ def generate_plots(scores, components=3):
 
 
 def main():
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	if ( len(args) == 0 ) and not ( PICKLED_SCORES ):
 		print "No input files."
 		sys.exit(0)

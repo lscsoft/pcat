@@ -21,7 +21,7 @@ from utilities_PCAT import *
 
 from data_conditioning import median_mean_average_psd
 
-def __usage__():
+def usage():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
 		[--ascii, -a] [-i]\n\
 		[--remove_seconds seconds] [--energy] [--timing]\n\
@@ -71,7 +71,7 @@ def __usage__():
 		Set the normalization constant to the transient's energy."
 	
 
-def __check_options_and_args__():
+def check_options_and_args():
 	"""
 		This function parses the arguments and option of the program.
 	"""
@@ -120,7 +120,7 @@ def __check_options_and_args__():
 	
 	if ( len(sys.argv[1:]) == 0 ):
 		print "No arguments given."
-		__usage__()
+		usage()
 		sys.exit(1)
 	else:
 		try:
@@ -134,7 +134,7 @@ def __check_options_and_args__():
 		for o, a in opts:
 			if o in ( '-h', '--help'):
 				print "Help:\t",
-				__usage__()
+				usage()
 				sys.exit()	
 			elif o in ( '-w', '--width' ):
 				CUSTOM_WIDTH = True
@@ -168,7 +168,7 @@ def __check_options_and_args__():
 			and any( '--sampling' in o for o in opts) ):
 		print "The options:\n-w or --width sampling_width\n-t or --threshold N"
 		print "--sampling sampl_freq\n*have* to be supplied."
-		#__usage__()
+		#usage()
 		sys.exit(1)
 	
 	
@@ -300,8 +300,8 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	'''
 		
 	spikes = []
-	
-	"""fig = plt.figure()
+	"""
+	fig = plt.figure()
 	ax = fig.add_subplot(111)
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	t = np.linspace(int(start), int(end), len(data[removed_points:-removed_points]))
@@ -309,8 +309,8 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	ax.plot(t, threshold*np.ones(len(data[removed_points:-removed_points])))
 	ax.plot(t, -threshold*np.ones(len(data[removed_points:-removed_points])))
 	fig.savefig("{0}-{1}.svg".format(start, end))
-	plt.close()"""
-	
+	plt.close()
+	"""
 	
 	to_analyze = data[removed_points:-removed_points]
 	
@@ -372,6 +372,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			# The squared SNR per unit frequency for a signal g(t) is defined as
 			#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
+			# Factor of two beause the numerator should be g(f)*g_conj(f) + g_conj(f)*g(f)
 			# where g(f) is the Fourier transform of g(t) and Pxx is the 
 			# detector spectrum.
 			# Thus the total SNR:
@@ -387,7 +388,14 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			# We don't need the factor of 4 in front of the integral because both spike.psd and psd
 			# are one-sided and are correctly normalized
-			spike.SNR = np.sqrt( 1.0 * (spike.psd/psd).sum()/psd.size )
+			spike.SNR = np.sqrt( (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
+			
+			# Check spike polarity
+			if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
+				spike.polarity = 1
+			else:
+				spike.waveform *= -1
+				spike.polarity = -1
 			
 			# Save Spike object
 			spikes.append(spike)
@@ -456,7 +464,7 @@ def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed
 
 
 def main():
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	
 	spikes_list = list()
 	spikes_number = 0 

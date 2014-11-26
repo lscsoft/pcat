@@ -25,7 +25,7 @@ import pylal.frutils
 
 from utilities_PCAT import progressBar
 
-def __usage__():
+def usage():
 	print "Usage:\n\tdownload_data.py -s start_time -e end_time -c channel -I IFO -f frame_type "
 	print "\t\t\t[--size segment_size] [--pad padding_seconds]"
 	
@@ -71,7 +71,7 @@ def __usage__():
 	 	(Default = 0)."
 	
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global startime, endtime
 	global IFO, datatype, channel
 	global segment_size, overlap
@@ -81,7 +81,7 @@ def __check_options_and_args__():
 	
 	if ( len(sys.argv[1:]) == 0 ):
 		print "No arguments given."
-		__usage__()
+		usage()
 		sys.exit(1)
 	else:
 		try:
@@ -93,7 +93,7 @@ def __check_options_and_args__():
 			sys.exit(1)
 		for o, a in opts:
 			if o in ( '-h', '--help'):
-				__usage__()
+				usage()
 				exit()
 			elif o in ( '-s', '--start'):
 				startime = int(a)
@@ -123,7 +123,7 @@ def __check_options_and_args__():
 			print "-c or --channel\t Channel name"
 			print "-I or --IFO\t IFO"
 			print "-f o --frame\t Frame Type"
-			#__usage__()
+			#usage()
 			exit()
 
 
@@ -235,7 +235,7 @@ def retrieve_timeseries(start_time, end_time, channel_name, IFO, frame_type):
 
 def main():
 	# Check arguments:
-	__check_options_and_args__()
+	check_options_and_args()
 	
 	# Download data from startime to endtime, splitting into 'segment_size' size
 	# segments (in seconds) overlapping by 'overlap'

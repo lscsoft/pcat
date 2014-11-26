@@ -19,7 +19,7 @@ import cPickle as pickle
 from scipy import signal
 from data_conditioning import butterworth_band_pass
 
-def __usage__():
+def usage():
 	print "Usage: pickled_butter -H f_high -L f_low -S f_sampling file"
 	print "\tTakes f_high (high cutoff freq), f_low (low cutoff freq),"
 	print "\tsampling frequency and a plain text file and applies"
@@ -34,7 +34,7 @@ def __usage__():
 		Sampling Frequency"
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global band_high
 	global band_low
 	global f_sampling
@@ -45,11 +45,11 @@ def __check_options_and_args__():
 		sys.exit(1)	
 	if ( len(args) == 0 ):
 		print "No arguments given. Exiting."
-		__usage__()
+		usage()
 		sys.exit(1)
 	for o, a in opts:
 		if o in ( '-h', '--help' ):
-			__usage__()
+			usage()
 			sys.exit(1)
 		elif o in ('-H', '--high'):
 			band_high = float(a)
@@ -64,7 +64,7 @@ def __check_options_and_args__():
 	 		any( flag in o for flag in [ '-S', '--sampling', 's' ] for o in opts) ):
 		print "Sampling frequency, low and high cutoff frequency have"
 		print "to be supplied. Exiting.\n"
-		__usage__()
+		usage()
 		sys.exit(1)
 	
 	return args
@@ -75,7 +75,7 @@ def __check_options_and_args__():
 def __main__():
 	global band_low, band_high
 	global f_sampling
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	file_name = args[0]
 	if ( len(args) > 1 ):
 		print "Warning: Only first file is processed.\
