@@ -18,7 +18,7 @@ from data_conditioning import compute_psd
 from utilities_PCAT import *
 
 
-def __usage__():
+def usage():
 	print "Usage:\t fft.py -s sampl_freq file1 file2 file3 ....\n"
 	print "\t Computes PSD at the desired resolution and returns pickled \".fft\" files."
 	print "\t Output is file1.fft, file2.fft, ..."
@@ -34,7 +34,7 @@ def __usage__():
 	 	Fourier Transform, e.g. \"--overlap 50\"."
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global PLOT
 	PLOT = False
 	global PICKLED
@@ -49,7 +49,7 @@ def __check_options_and_args__():
 	
 	if ( len( sys.argv[1:] ) == 0 ):
 		print "No arguments given."
-		__usage__()
+		usage()
 		sys.exit(1)
 	else:
 		try:
@@ -109,7 +109,7 @@ def plot_psd(frequencies, psd, file_name):
 
 def __main__():
 	global PLOT, pickled, n_files, CUSTOM_OUT, output_size, warning
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	
 	n_files = len(args)
 	print "{0}".format(n_files)+" input file"+'s' if n_files > 1 else ''+" Processing..."

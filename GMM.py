@@ -50,7 +50,7 @@ import sklearn.mixture as mix
 # mplot3d is used for the 3D plots.
 #from mpl_toolkits.mplot3d import axes3d
 
-def __usage__():
+def usage():
 	'''
 		Usage help.
 	'''
@@ -109,7 +109,7 @@ def __usage__():
 	#----print "\t--list\n\t\t Saves GPS start and end times for each type's spectra."
 
 
-def __check_options_and_args__():
+def check_options_and_args():
 	global MAX_CLUSTERS, max_clusters
 	MAX_CLUSTERS = False
 	max_clusters = 10
@@ -167,7 +167,7 @@ def __check_options_and_args__():
 		sys.exit(1)
 	for o, a in opts:
 		if o in ( '-h', '--help' ):
-			__usage__()
+			usage()
 			sys.exit(1)
 		elif o in ( '-m', 'maxclusters' ):
 			max_clusters = int(a)+1
@@ -1461,7 +1461,7 @@ def main():
 	global means, observations, samples, marker
 	global STANDARDIZE, PRINT_LIST
 	
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	
 	matrix, spike_database = load_data(args, ANALYSIS)
 	observations, samples = matrix.shape

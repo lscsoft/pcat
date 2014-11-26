@@ -21,7 +21,7 @@ from utilities_PCAT import *
 
 from data_conditioning import median_mean_average_psd
 
-def __usage__():
+def usage():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
 		[--ascii, -a] [-i]\n\
 		[--remove_seconds seconds] [--energy] [--timing]\n\
@@ -71,7 +71,7 @@ def __usage__():
 		Set the normalization constant to the transient's energy."
 	
 
-def __check_options_and_args__():
+def check_options_and_args():
 	"""
 		This function parses the arguments and option of the program.
 	"""
@@ -120,7 +120,7 @@ def __check_options_and_args__():
 	
 	if ( len(sys.argv[1:]) == 0 ):
 		print "No arguments given."
-		__usage__()
+		usage()
 		sys.exit(1)
 	else:
 		try:
@@ -134,7 +134,7 @@ def __check_options_and_args__():
 		for o, a in opts:
 			if o in ( '-h', '--help'):
 				print "Help:\t",
-				__usage__()
+				usage()
 				sys.exit()	
 			elif o in ( '-w', '--width' ):
 				CUSTOM_WIDTH = True
@@ -168,7 +168,7 @@ def __check_options_and_args__():
 			and any( '--sampling' in o for o in opts) ):
 		print "The options:\n-w or --width sampling_width\n-t or --threshold N"
 		print "--sampling sampl_freq\n*have* to be supplied."
-		#__usage__()
+		#usage()
 		sys.exit(1)
 	
 	
@@ -464,7 +464,7 @@ def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed
 
 
 def main():
-	args = __check_options_and_args__()
+	args = check_options_and_args()
 	
 	spikes_list = list()
 	spikes_number = 0 
