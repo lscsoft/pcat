@@ -540,7 +540,7 @@ def main():
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
     
     # Define output URL
-    summary_URL = "{0}/{2}.html\n".format(base_URL, os.path.basename(times_list))
+    summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))
     
     print "-"*40
     print "Done! Summary at:\n{0}".format(summary_URL)
