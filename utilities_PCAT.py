@@ -579,9 +579,9 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		ax2.plot(time_axis, peak_frequencies, "ro")
 	
 	# PLOT STAR AS LOUDEST EVENT FOR PLOT 2
-	ax2.plot(time_axis[loudest_event_index], peak_frequencies[loudest_event_index], "r*", markersize=10)
+	ax2.plot(time_axis[loudest_event_index], peak_frequencies[loudest_event_index], markers_and_colors[labels[loudest_event_index]][1]+"*", markersize=10)
 	
-	#ax2.add_artist(color_legend)
+    #ax2.add_artist(color_legend)
 	
 	ax2.set_xlim((start_time, end_time))
 	ax2.autoscale(False, axis="both")
