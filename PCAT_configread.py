@@ -301,19 +301,19 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     
     
     # Final touch: add configuration files, original command, error list, then close html file tags
-    config_time = "{0}/misc/config_{1}_time.txt".format(list_name, base_URL)
-    config_frequency = "{0}/misc/config_{1}_frequency.txt".format(list_name, base_URL)
+    config_time = "/misc/config_{0}_time.txt".format(list_name)
+    config_frequency = "/misc/config_{0}_frequency.txt".format(list_name)
     
     configstring = "Configuration files: "
     if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
-        configstring += "<a href='.{0}'>Time Domain</a>".format(config_time)
+        configstring += "<a href='{0}/{1}'>Time Domain</a>".format(config_time, base_URL)
     configstring += ", "
     if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
-        configstring += "<a href='.{0}'>Frequency Domain</a>".format(config_frequency)
+        configstring += "<a href='{0}/{1}'>Frequency Domain</a>".format(config_frequency, base_URL)
     
     global original_command
     original_command_string = join(original_command, " ")
