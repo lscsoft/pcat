@@ -1,0 +1,90 @@
+#!/bin/bash
+# Takes as input a list of gps times and a channel name
+# and returns an html file with the links
+# to the time series, spectra and spectrograms
+# on LIGODV web (ldvw.ligo.caltech.edu)
+# Duration of the time series/spectra/spectrograms
+# is defined below in the DURATION
+# variable.
+#
+# Daniele Trifiro' 13 September 2014
+
+segment_list=$1
+chanName=$2
+OUTPUT_DIR="../timeseries-spectrograms/"
+OUTPUT_FILE=$OUTPUT_DIR`echo $segment_list | sed 's/\.txt$//g'`.html
+
+DURATION=60
+
+#echo $times_list
+#echo $OUTPUT_DIR
+#echo $OUTPUT_FILE
+#echo $times_list | sed 's/\.txt$//g'
+
+if [ ! -d $OUTPUT_DIR ]; then
+  mkdir -p $OUTPUT_DIR
+  printf "Created folder:\t"
+  echo $OUTPUT_DIR
+fi
+
+echo '<html><head>Timeseries and spectrograms segments in for '$1', channel: '$chanName'</head></br></br>' > $OUTPUT_FILE
+
+for segment_start in $(cat $segment_list | awk '{print $1}')
+do
+	echo "<a href='https://ldvw.ligo.caltech.edu/ldvw/view?act=doplot\
+		&chanName="$chanName"\
+		&strtTime="${segment_start}"\
+		&strtTime=\
+		&strtTime=\
+		&strtTime=\
+		&duration=$DURATION\
+		&repeatDur=0\
+		&repeatUnit=seconds\
+		&rptCnt=1\
+		&plotGroup=time\
+		&doTimeSeries=Generate+time+series+plot\
+		&ts_timeaxis=%26%23916%3Bt\
+		&ts_linethickness=2\
+		&doSpectrum=Generate+spectrum+plot\
+		&window=Hanning\
+		&scaling=Power+spectral+density\
+		&sp_linethickness=2\
+		&secperfft=1.0\
+		&fftoverlap=0.5\
+		&fmin=\
+		&fmax=\
+		&sp_logx=Freq+axis+logarithmic\
+		&sp_logy=Range+axis+logarithmic\
+		&doSpectrogram=Generate+Spectrogram%3Cbr%3E%3Cbr%3E\
+		&spg_window=Hanning\
+		&spg_scaling=PSD\
+		&spg_secperfft=1\
+		&spg_fftoverlap=\
+		&spg_fmin=\
+		&spg_fmax=\
+		&spg_logfreq=Freq+axis+logarithmic\
+		&spg_logintensity=Color+scale+logarithmic\
+		&spg_norm=Normalize\
+		&spg_smooth=Smooth+in+time+and+freq\
+		&spg_interp=Interpolate+resulting+image\
+		&spg_lo=0.2\
+		&spg_up=1.0\
+		&spg_color=Jet\
+		&wplt_plttyp=spectrogram_whitened\
+		&wplt_plttimes=1+4+16\
+		&wplt_smplfrq=4096\
+		&wplt_pltfrq=0+inf\
+		&wplt_pltenergyrange=0.0+25.5\
+		&wplt_srchtime=64\
+		&wplt_srchfrqrng=0+inf\
+		&wplt_srchqrng=4.0+64.0\
+		&plotSize=Default+%281200x600%29\
+		&plot=Plot+%BB\
+		&dwnFmt=LigoDV+export'>${segment_start}--$((segment_start+60))</a></br>" >> $OUTPUT_FILE
+
+	
+done
+
+echo '</html>' >> $OUTPUT_FILE
+
+echo "Saved '$OUTPUT_FILE'"

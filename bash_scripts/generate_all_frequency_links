@@ -1,0 +1,11 @@
+#!/bin/bash
+for channel in `ls ~/public_html/frequency_PCAT/`
+do
+	for folder in `find ~/public_html/frequency_PCAT/"$channel"/* | grep Types_detail  | grep -v txt `
+		do
+			cd $folder
+			echo "Processing  " $PWD
+			ls | xargs -I {} get_timeseries-spectrograms_links {} $channel
+		done
+done
+	

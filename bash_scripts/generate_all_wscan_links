@@ -1,0 +1,11 @@
+#!/bin/bash
+for channel in `ls ~/public_html/time_PCAT/`
+do
+	for folder in `find ~/public_html/time_PCAT/"$channel"/* | grep Types_detail  | grep -v txt `
+		do
+			cd $folder
+			echo "Processing  " $PWD
+			ls | xargs -I {} get_wscan_links {} $channel
+		done
+done
+	

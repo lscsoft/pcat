@@ -1,0 +1,48 @@
+#!/bin/bash
+# Takes as input a list of gps time and channel name ($1 and $2)
+# and returns an html file with the links to the wscans
+# in the ../wscan folder (this is created if missing).
+
+times_list=$1
+chanName=$2
+OUTPUT_DIR="../wscans/"
+OUTPUT_FILE=$OUTPUT_DIR`echo $times_list | sed 's/\.txt$//g'`.html
+
+
+#echo $times_list
+#echo $OUTPUT_DIR
+#echo $OUTPUT_FILE
+#echo $times_list | sed 's/\.txt$//g'
+
+if [ ! -d $OUTPUT_DIR ]; then
+  mkdir -p $OUTPUT_DIR
+  printf "Created folder:\t"
+  echo $OUTPUT_DIR
+fi
+
+echo '<html><head>wscans for '$1', channel: '$chanName'</head></br></br>' > $OUTPUT_FILE
+
+echo 'WARNING: wscans from the web viewer have to be centered on an integer GPS time</br>' >> $OUTPUT_FILE
+echo '         this means that most of these scans will not be centered on glitch, but</br>' >> $OUTPUT_FILE
+echo '         the glitch will be somewhere around +/- 1 sec around the wscan 0 point</br>' >> $OUTPUT_FILE
+echo "</br></br>" >> $OUTPUT_FILE
+
+for time in $(cat $times_list)
+do
+	integer_time=${time%.*}
+		
+	echo "<a href='https://ldvw.ligo.caltech.edu/ldvw/view?act=doplot&chanName="$chanName"\
+		&strtTime="${integer_time}"&doWplot=Generate+Omega+scan%3Cbr%3E%3Cbr%3E&wplt_plttyp=spectrogram_whitened\
+		&wplt_plttyp=timeseries_whitened\
+		&wplt_plttimes=1+3+6\
+		&wplt_smplfrq=8192\
+		&wplt_pltfrq=0+inf\
+		&wplt_pltenergyrange=0.0+25.5\
+		&wplt_srchtime=64\
+		&wplt_srchfrqrng=0+inf\
+		&wplt_srchqrng=4.0+64.0'>$time</a></br>" >> $OUTPUT_FILE
+done
+
+echo '</html>' >> $OUTPUT_FILE
+
+echo "Saved '$OUTPUT_FILE'"
