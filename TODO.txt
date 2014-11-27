@@ -1,10 +1,4 @@
 To Fix:
-=======
-Things to implement/fix, in no particular order
-- Write empty html file to public_html output folder if no locked segments are found.
-- Add xml file dumper to the end of PCAT.pipeline()
-- Implement a real python package (__version__, __author__, etc)
-- Glitch classification confidence level, using the methods of sklearn.mixture.gmm
 - PCAT_configread: Switch the configurations files to .ini and use python ConfigParse
 - PCAT_configread: Include a default configuration and a fallback to default when the supplied
  configuration file does not exist (plus error if the configuration file is malformed)

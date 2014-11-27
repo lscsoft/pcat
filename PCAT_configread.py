@@ -446,8 +446,8 @@ def main():
         print "IFO ('L' or 'H') has to be supplied. Quitting."
         exit()
     
-    # Call grid-proxy-init to initialize the robot cert
-    subprocess.call(["robot-proxy-init"])
+    # Call ligo-proxy-init to initialize the grid certificate
+    subprocess.call(["ligo-proxy-init {0}".format(user_name)])
     
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
@@ -528,7 +528,7 @@ def main():
     
     # Write lock_plot
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
-        
+    
     # Define output URL
     summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))
     
