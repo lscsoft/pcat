@@ -308,12 +308,12 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
-        configstring += "<a href='{0}/{1}'>Time Domain</a>".format(config_time, base_URL)
+        configstring += "<a href='{0}/{1}'>Time Domain</a>".format(base_URL, config_time)
     configstring += ", "
     if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
-        configstring += "<a href='{0}/{1}'>Frequency Domain</a>".format(config_frequency, base_URL)
+        configstring += "<a href='{0}/{1}'>Frequency Domain</a>".format(base_URL, config_frequency)
     
     global original_command
     original_command_string = join(original_command, " ")
