@@ -631,7 +631,6 @@ def calculate_types(database, clusters, score_matrix, principal_components, mean
 				
 			elif ( "time" in ANALYSIS ):
 				fig, ax = set_axes_time(time_axis)
-				
 				maximum_index = np.argmax(np.abs(element))
 				element[maximum_index] = (element[maximum_index-1]+element[maximum_index+1])/2.0
 				ax.plot(time_axis, element, 'b-', linewidth = 0.4 )
@@ -1497,14 +1496,6 @@ def main():
 	
 	colored_clusters = color_clusters( score_matrix, labels )
 	print_cluster_info(colored_clusters)
-	
-	
-	# DEVELOPMENT TEST 03/25/2014
-	# Testing the goodness of the clutering with a
-	# chisquare test on the glitches in each cluster
-	with warnings.catch_warnings():
-		warnings.filterwarnings( "ignore", category=UserWarning )
-		chisquare_test(spike_database, labels)
 	
 	
 	'''

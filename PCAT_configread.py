@@ -157,7 +157,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
             error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
-                channel_processing_errors += "<b>Time Domain</b>: </br>"
+                channel_processing_errors += "<b>Time Domain</b>:</br>"
             errors += 1
             channel_processing_errors += "{1} -  Channel name: {0}, error:</br>".format(channel_names[index], errors)
             channel_processing_errors += "\t{0}</br>".format(error.replace("\n", "</br>"))
@@ -187,7 +187,7 @@ def run_PCAT_frequency(list_name, configuration):
             URL = PCAT.pipeline(configuration)
         except:
             import traceback
-            error = traceback.format_exc().replace("\n", "</br>")
+            error = traceback.format_exc()
             print "Exception: {0}".format(error)
             if errors == 0:
                 channel_processing_errors += "<b><Frequency Domain:</b></br>"
@@ -308,12 +308,12 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     if not (os.path.exists(output_dir + config_time)):
         configstring += "Time Domain N/A"
     else:
-        configstring += "<a href='.{0}'>Time Domain</a>".format(config_time)
+        configstring += "<a href='{0}/{1}'>Time Domain</a>".format(base_URL, config_time)
     configstring += ", "
     if not (os.path.exists(output_dir + config_frequency)):
         configstring += "Frequency Domain N/A"
     else:
-        configstring += "<a href='.{0}'>Frequency Domain</a>".format(config_frequency)
+        configstring += "<a href='{0}/{1}'>Frequency Domain</a>".format(base_URL, config_frequency)
     
     global original_command
     original_command_string = join(original_command, " ")
@@ -446,6 +446,9 @@ def main():
         print "IFO ('L' or 'H') has to be supplied. Quitting."
         exit()
     
+    # Call grid-proxy-init to initialize the robot cert
+    subprocess.call(["robot-proxy-init"])
+    
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
         out_name = str(opts.start)+"-"+str(opts.end)
@@ -501,7 +504,7 @@ def main():
     else:
         times_list = opts.list
         out_name = opts.list
-        
+      
     
     configuration_file_time = os.path.abspath(opts.time)
     shutil.copyfile(configuration_file_time, output_dir + "/misc/config_" + os.path.basename(times_list) + "_time.txt")
@@ -519,17 +522,17 @@ def main():
     # Also do frequency domain if requested, then print results
     if (opts.frequency):
         frequency_results = run_PCAT_frequency(times_list, frequency_configuration)
-        print_html_table(times_list, output_dir, time_results, results_frequency=frequency_results)
+        print_html_table(times_list, output_dir, base_URL, time_results, results_frequency=frequency_results)
     else:
-        print_html_table(times_list, output_dir, time_results)
+        print_html_table(times_list, output_dir, base_URL, time_results)
     
     # Write lock_plot
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
         
-    print "-"*40
     # Define output URL
     summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))
     
+    print "-"*40
     print "Done! Summary at:\n{0}".format(summary_URL)
     
     from write_summaries_index import main as final_touch
