@@ -447,8 +447,8 @@ def main():
         exit()
     
     # Call grid-proxy-init to initialize the robot cert
-    subprocess.call(["robot-proxy-init"])
-    
+    #subprocess.call(["robot-proxy-init"])
+ 
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
         out_name = str(opts.start)+"-"+str(opts.end)
@@ -490,17 +490,18 @@ def main():
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active 
         else:
             FLAG = "L1:DMT-DC_READOUT:1"
+            #FLAG = "L1:ODC-MASTER_OBS_INTENT:1"
             print FLAG
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
-        
+            locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
+            
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
         if (len(locked_times) > 0):
             for segment in locked_times:
-                # Add one second at the start and remove one second at the end of
+                # Add 30 seconds at the start and remove 30 seconds at the end of
                 # each segment to avoid pre-lock-loss transients
-                f.write(str(int(segment[0]+1))+"\t"+str(int(segment[1])-1)+"\n")
+                f.write(str(int(segment[0]+30))+"\t"+str(int(segment[1])-30)+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
