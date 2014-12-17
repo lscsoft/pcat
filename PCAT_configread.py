@@ -489,7 +489,7 @@ def main():
             print FLAG
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active 
         else:
-            FLAG = "L1:DMT-DC_READOUT:1"
+            FLAG = "L1:ODC-MASTER_GRD_IFO_LOCKED:1"
             print FLAG
             locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
         
@@ -500,7 +500,7 @@ def main():
             for segment in locked_times:
                 # Add one second at the start and remove one second at the end of
                 # each segment to avoid pre-lock-loss transients
-                f.write(str(int(segment[0]+1))+"\t"+str(int(segment[1])-1)+"\n")
+                f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
