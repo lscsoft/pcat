@@ -525,7 +525,9 @@ def main():
         frequency_configuration = read_config_frequency(configuration_file_frequency)
         shutil.copyfile(configuration_file_frequency, output_dir + "/misc/config_" + os.path.basename(times_list) + "_frequency.txt")
         
-    
+    # Write lock_plot
+    locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
+	
     # Run time domain analysis
     time_results = run_PCAT_time(times_list, configuration_time, start_time, end_time)
     
@@ -536,8 +538,7 @@ def main():
     else:
         print_html_table(times_list, output_dir, base_URL, time_results)
     
-    # Write lock_plot
-    locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
+    
     
     # Define output URL
     summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))
