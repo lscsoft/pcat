@@ -55,7 +55,7 @@ from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 12
+PARALLEL_PROCESSES = 4
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -707,6 +707,8 @@ def print_parameters():
 				pass
 		else:
 			print "\t\t Whitening:\t\t\tOFF\n"
+			if HIGH_PASS:
+				print "\t\t High Pass Cutoff:\t\t", HIGH_PASS_CUTOFF
 		print "\t - Trigger parameters:\n\
 		 Number of variables:\t\t", variables
 		if ( sampling > ANALYSIS_FREQUENCY ):
@@ -1009,7 +1011,10 @@ def pipeline(args):
 			# If no kind of processing is required return the unprocessed time
 			# series.
 			conditioned_folder = "raw/"
-			conditioning_function = lambda x: x['waveform']
+			if HIGH_PASS:
+				conditioning_function = lambda x: high_pass_filter(x['waveform'], HIGH_PASS_CUTOFF, x['fs'], 4)
+			else:
+				conditioning_function = lambda x: x['waveform']
 	elif ( "frequency" in ANALYSIS ):
 		# The conditioning function simply has to compute the PSD of the input
 		# segment
