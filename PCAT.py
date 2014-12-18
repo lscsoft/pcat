@@ -706,9 +706,9 @@ def print_parameters():
 			else:
 				pass
 		else:
-			print "\t\t Whitening:\t\t\tOFF\n"
+			print "\t\t Whitening:\t\t\tOFF"
 			if HIGH_PASS:
-				print "\t\t High Pass Cutoff:\t\t", HIGH_PASS_CUTOFF
+				print "\t\t High Pass Cutoff:\t\t\n", HIGH_PASS_CUTOFF
 		print "\t - Trigger parameters:\n\
 		 Number of variables:\t\t", variables
 		if ( sampling > ANALYSIS_FREQUENCY ):
@@ -833,6 +833,8 @@ def pipeline(args):
 				log_name += "_highpassed_" + str(HIGH_PASS_CUTOFF)
 		elif FILTER:
 			log_name += "_filter_%i-%i" % (low, high)
+		elif HIGH_PASS:
+			log_name += "_highpassed_" + str(HIGH_PASS_CUTOFF)
 	else:
 		global resolution
 		resolution = sampling/(2*(variables-1))
@@ -869,6 +871,9 @@ def pipeline(args):
 			OUTPUT += "whitened_"
 			if HIGH_PASS:
 				OUTPUT += "highpassed_{0}_".format(HIGH_PASS_CUTOFF)
+		elif HIGH_PASS:
+			OUTPUT += "highpassed_{0}_".format(HIGH_PASS_CUTOFF)
+		
 		OUTPUT += "{0}_".format(normalization)
 		OUTPUT += "t-{0}_w-{1}/".format(threshold, variables)
 	elif ( "frequency" in ANALYSIS ):
