@@ -45,19 +45,19 @@ with open(args.database, "rb") as f:
 
 class GPS():
     def __init__(self, seconds, decimals):
-        self.seconds = seconds
-        self.nanoseconds = decimals
+        self.seconds = int(seconds)
+        self.nanoseconds = int(decimals*1e8)
     
 for index, spike in enumerate(database):
     row = table.RowType()
     
-    tmp_time = ("{0:.6f}".format(spike.peak_GPS)).split('.')
-    peak_GPS = GPS(int(tmp_time[0]), int(tmp_time[1]))
-    #row.set_peak(lal.LIGOTimeGPS((gps_seconds, gps_nanoseconds)))
+    tmp_time = int(np.floor(spike.peak_GPS))
+    peak_GPS = GPS(tmp_time, spike.peak_GPS-tmp_time)
     row.set_peak(peak_GPS)
     
-    tmp_time = str(spike.peak_GPS+spike.start*spike.sampling).split('.')
-    start = GPS(int(tmp_time[0]), int(tmp_time[1]))
+    peak_tmp = spike.peak_GPS + spike.start*spike.sampling
+    peak_tmp_int = int(np.floor(peak_tmp))
+    start = GPS(peak_tmp_int, peak_tmp-peak_tmp_int)
     row.set_start(start)
     # duration is temporary, replace with spike.duration
     row.duration = (spike.waveform.size)/float(spike.sampling)
