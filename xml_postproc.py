@@ -42,15 +42,16 @@ table = lsctables.New(lsctables.SnglBurstTable, ["ifo", "peak_time",
 
 with open(args.database, "rb") as f:
     database = pickle.load(f)
+
 class GPS():
     def __init__(self, seconds, decimals):
         self.seconds = seconds
-        self.nanoseconds = decimals*1e8
+        self.nanoseconds = decimals
     
 for index, spike in enumerate(database):
     row = table.RowType()
     
-    tmp_time = str(spike.peak_GPS).split('.')
+    tmp_time = ("{0:.6f}".format(spike.peak_GPS)).split('.')
     peak_GPS = GPS(int(tmp_time[0]), int(tmp_time[1]))
     #row.set_peak(lal.LIGOTimeGPS((gps_seconds, gps_nanoseconds)))
     row.set_peak(peak_GPS)
@@ -59,7 +60,7 @@ for index, spike in enumerate(database):
     start = GPS(int(tmp_time[0]), int(tmp_time[1]))
     row.set_start(start)
     # duration is temporary, replace with spike.duration
-    row.duration = (spike.waveform.size)/spike.sampling 
+    row.duration = (spike.waveform.size)/float(spike.sampling)
     #row.duration = spike.duration
     
     # Duration is simply f_max -f_min, or nyquist frequency minus lowest frequcency (1/segment_len)
@@ -69,7 +70,7 @@ for index, spike in enumerate(database):
     
     ## Confidence is simply PCAT's threshold (LIGO-T1200125), either add this to PCAT database (add in finder.py)
     ## or simply wait to merge xml_postproc into PCAT as the above
-    #row.confidence = 0.0 # FIXME: Do we care to do this right?
+    #row.confidence = 0.0 # FIXME: Do we care about this right?
     row.central_freq = spike.central_freq
 
     #row.chisq = 0
