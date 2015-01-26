@@ -55,9 +55,9 @@ for index, spike in enumerate(database):
     peak_GPS = GPS(tmp_time, spike.peak_GPS-tmp_time)
     row.set_peak(peak_GPS)
     
-    peak_tmp = spike.peak_GPS + spike.start*spike.sampling
-    peak_tmp_int = int(np.floor(peak_tmp))
-    start = GPS(peak_tmp_int, peak_tmp-peak_tmp_int)
+    start_tmp = spike.segment_start + spike.start/float(spike.sampling)
+    start_tmp_int = int(np.floor(start_tmp))
+    start = GPS(start_tmp_int, start_tmp-start_tmp_int)
     row.set_start(start)
     # duration is temporary, replace with spike.duration
     row.duration = (spike.waveform.size)/float(spike.sampling)
