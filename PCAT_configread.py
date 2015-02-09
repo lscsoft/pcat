@@ -500,7 +500,8 @@ def main():
             for segment in locked_times:
                 # Add one second at the start and remove one second at the end of
                 # each segment to avoid pre-lock-loss transients
-                f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
+                if (segment[1]-10 + segment[0]+10) > 60:
+                	f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
             f.close()
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
