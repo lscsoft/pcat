@@ -1012,14 +1012,14 @@ def pipeline(args):
 			conditioning_function = lambda x: whiten(x['waveform'], download_overlap_seconds, f_sampl=x['fs'], resample_freq=ANALYSIS_FREQUENCY, \
 									highpass=HIGH_PASS, highpass_cutoff=HIGH_PASS_CUTOFF,\
 									resample=RESAMPLE)
+		elif HIGH_PASS:
+			conditioned_folder = "high_passed_%1.f/" % HIGH_PASS_CUTOFF
+			conditioning_function = lambda x: high_pass_filter(x['waveform'], HIGH_PASS_CUTOFF, x['fs'], 4)
 		else:
 			# If no kind of processing is required return the unprocessed time
 			# series.
 			conditioned_folder = "raw/"
-			if HIGH_PASS:
-				conditioning_function = lambda x: high_pass_filter(x['waveform'], HIGH_PASS_CUTOFF, x['fs'], 4)
-			else:
-				conditioning_function = lambda x: x['waveform']
+			conditioning_function = lambda x: x['waveform']
 	elif ( "frequency" in ANALYSIS ):
 		# The conditioning function simply has to compute the PSD of the input
 		# segment
