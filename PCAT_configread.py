@@ -447,16 +447,18 @@ def main():
         exit()
     
     # Call grid-proxy-init to initialize the robot cert
-    subprocess.call(["robot-proxy-init"])
+    #subprocess.call(["robot-proxy-init"])
     
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
         out_name = str(opts.start)+"-"+str(opts.end)
     
-    if opts.start:
-        out_name = opts.name
-    else:
+    
+    if opts.list :
         out_name = os.path.basename(opts.list)
+    if opts.name:
+        out_name = opts.name
+    
     
     out_file = out_name
     
@@ -491,7 +493,8 @@ def main():
         else:
             FLAG = "H1:ODC-MASTER_GRD_IFO_LOCKED:1"
             print FLAG
-            locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
+            #locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
+            locked_times = [[start_time, end_time]]
         
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
