@@ -46,7 +46,7 @@ with open(args.database, "rb") as f:
 class GPS():
     def __init__(self, seconds, decimals):
         self.seconds = int(seconds)
-        self.nanoseconds = int(decimals*1e8)
+        self.nanoseconds = decimals*1e8
     
 for index, spike in enumerate(database):
     row = table.RowType()
@@ -58,6 +58,7 @@ for index, spike in enumerate(database):
     start_tmp = spike.segment_start + spike.start/float(spike.sampling)
     start_tmp_int = int(np.floor(start_tmp))
     start = GPS(start_tmp_int, start_tmp-start_tmp_int)
+    print start.nanoseconds
     row.set_start(start)
     # duration is temporary, replace with spike.duration
     row.duration = (spike.waveform.size)/float(spike.sampling)
@@ -71,7 +72,7 @@ for index, spike in enumerate(database):
     ## Confidence is simply PCAT's threshold (LIGO-T1200125), either add this to PCAT database (add in finder.py)
     ## or simply wait to merge xml_postproc into PCAT as the above
     #row.confidence = 0.0 # FIXME: Do we care about this right?
-    row.central_freq = spike.central_freq
+    row.central_freq = spike.fft_freq[np.argmax(spike.psd)]
 
     #row.chisq = 0
     #row.chisq_dof = 2*band*dur
