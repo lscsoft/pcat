@@ -220,7 +220,7 @@ def retrieve_timeseries(start_time, end_time, channel_name, IFO, frame_type):
 				@'dt' sampling period, 1/fs (float)
 	"""
 	
-	with open("/home/brethil/Jade_glitches/jade_frames.cache") as cachefile:
+	with open("/home/brethil/classification_paper/MDC3.cache") as cachefile:
 		cache = lal.Cache.fromfile(cachefile)
 	d = pylal.frutils.FrameCache(cache)
 	
