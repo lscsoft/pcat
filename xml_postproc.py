@@ -43,24 +43,28 @@ table = lsctables.New(lsctables.SnglBurstTable, ["ifo", "peak_time",
 with open(args.database, "rb") as f:
     database = pickle.load(f)
 
- 
+class GPS():
+    def __init__(self, seconds, decimals):
+        self.seconds = int(seconds)
+        self.nanoseconds = decimals*1e8
+    
 for index, spike in enumerate(database):
     row = table.RowType()
     
-    row.set_peak(lsctables.LIGOTimeGPS(spike.peak_GPS))
+    tmp_time = int(np.floor(spike.peak_GPS))
+    peak_GPS = GPS(tmp_time, spike.peak_GPS-tmp_time)
+    row.set_peak(peak_GPS)
     
     start_tmp = spike.segment_start + spike.start/float(spike.sampling)
     start_tmp_int = int(np.floor(start_tmp))
-    start = lsctables.LIGOTimeGPS(start_tmp_int, start_tmp-start_tmp_int)
-    
-    #print start.nanoseconds
-    
+    start = GPS(start_tmp_int, start_tmp-start_tmp_int)
+    print start.nanoseconds
     row.set_start(start)
-    ## duration is temporary, replace with spike.duration
+    # duration is temporary, replace with spike.duration
     row.duration = (spike.waveform.size)/float(spike.sampling)
     #row.duration = spike.duration
-    ## Duration is simply f_max -f_min, or nyquist frequency minus lowest frequcency (1/segment_len)
     
+    # Duration is simply f_max -f_min, or nyquist frequency minus lowest frequcency (1/segment_len)
     row.bandwidth = spike.sampling/2.0 - spike.sampling/float(spike.waveform.size)
     #FIXME: Bandwidth is actually lower because data is high pass filtered.
     # We cannot do much about this until we add this to PCAT.py
