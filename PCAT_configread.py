@@ -447,7 +447,7 @@ def main():
         exit()
     
     # Call grid-proxy-init to initialize the robot cert
-    #subprocess.call(["robot-proxy-init"])
+    subprocess.call(["robot-proxy-init"])
     
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
@@ -475,26 +475,10 @@ def main():
     
     if not opts.list:
         print "Retrieving locked segments..."
-        if (start_time < 1091836816):
-            FLAG_1 = "H1:DMT-XARM_LOCK:1"
-            FLAG_2 = "H1:DMT-YARM_LOCK:1"
-            FLAG_3 = "H1:DMT-PRC_LOCK:1"
-            # Get locked segments for each the three above flags:
-            locked = DataQualityDict.query([FLAG_1, FLAG_2, FLAG_3], start_time, end_time, url="https://segdb-er.ligo.caltech.edu")
-            locked_times = locked[FLAG_1].active & locked[FLAG_2].active & locked[FLAG_3].active
-        elif (start_time < 1094947216):
-            FLAG = "H1:DMT-DC_READOUT_LOCKED:1"
-            print FLAG
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active
-        elif (start_time < 1096399309):
-            FLAG = "H1:DMT-DC_READOUT:1"
-            print FLAG
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active 
-        else:
-            FLAG = "H1:ODC-MASTER_GRD_IFO_LOCKED:1"
-            print FLAG
-            #locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
-            locked_times = [[start_time, end_time]]
+        
+        FLAG = "H1:DMT-DC_READOUT_LOCKED:1"
+        print FLAG
+        locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
         
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
@@ -502,7 +486,7 @@ def main():
         counter = 0
         if (len(locked_times) > 0):
             for segment in locked_times:
-                # Add one second at the start and remove one second at the end of
+                # Add one second at the start and remove ten seconds at the end of
                 # each segment to avoid pre-lock-loss transients
                 if (segment[1]-10 + segment[0]+10) > 60:
                     f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
