@@ -141,9 +141,9 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
         
         whiten = '--whiten' if (whitening[index] == "YES") else ''
         if opts.start and opts.end:
-            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
+            arg = "PCAT.py --noplot --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
         else:
-            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
+            arg = "PCAT.py --noplot --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
         args.append(arg.split())
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
@@ -176,7 +176,7 @@ def run_PCAT_frequency(list_name, configuration):
         # -c L1:LSC-DARM_OUT_DQ --start 1090221815 --end 1090222285
         # --list list_name -m 10 --components 40 -v 8192
         
-        arg = "PCAT.py --silent --frequency --channel {0} --IFO {1} --frame {2} --list {3} --size {4} -v {5} --components {6} -m {7} --reconstruct".format(channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], variables_number[index], components_number[index], max_clusters[index])
+        arg = "PCAT.py --noplot --silent --frequency --channel {0} --IFO {1} --frame {2} --list {3} --size {4} -v {5} --components {6} -m {7} --reconstruct".format(channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], variables_number[index], components_number[index], max_clusters[index])
         args.append(arg.split())
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
