@@ -496,13 +496,15 @@ def main():
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
+        counter = 0 
         if (len(locked_times) > 0):
             for segment in locked_times:
                 # Add one second at the start and remove one second at the end of
                 # each segment to avoid pre-lock-loss transients
-                if (segment[1]-10 + segment[0]+10) > 60:
-                	f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
-            f.close()
+                if ( (segment[1]-10) - (segment[0]+10)) > 60:
+                    counter += 1
+                    f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
+            
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
             f.close()
@@ -511,7 +513,17 @@ def main():
             final_touch()
             print "Updated summary index."
             
-            sys.exit()
+            return
+        if counter == 0:
+            f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
+            f.close()
+            locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
+            from write_summaries_index import main as final_touch
+            final_touch()
+            print "Updated summary index."
+            return
+        else:
+            f.close()
     else:
         times_list = opts.list
         out_name = opts.list
