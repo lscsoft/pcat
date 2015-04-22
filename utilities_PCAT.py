@@ -549,7 +549,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	sizes += 3
 	
 	# Plot the scatterplot for the first panel and colorbar
-	cax = ax.scatter(time_axis, peak_frequencies, c=SNRs, s=sizes, norm=matplotlib.colors.LogNorm(), cmap=matplotlib.cm.jet)
+	cax = ax.scatter(time_axis, peak_frequencies, c=SNRs, s=sizes, norm=matplotlib.colors.LogNorm(), cmap=matplotlib.cm.jet, edgecolor="none")
 	cbar = plt.colorbar(cax, ax=ax, orientation="vertical", shrink=0.7, fraction=0.05, pad=0.01, spacing="proportional")
 
 	# Fix colorbar labels
