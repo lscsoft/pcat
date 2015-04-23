@@ -758,7 +758,7 @@ def print_lists(database, labels, cluster_number, ANALYSIS):
 		elif ( 'time' in ANALYSIS ):
 			for j_index, observation in enumerate(database):
 				if ( labels[j_index] == index ):
-					f.write( str(observation.peak_GPS)+"\n")
+					f.write( "{0:.6f}".format(observation.peak_GPS)+"\n")
 		f.close()
 		#print "\tSaved: "+OUTPUT+"."
 
@@ -1496,6 +1496,14 @@ def main():
 	
 	colored_clusters = color_clusters( score_matrix, labels )
 	print_cluster_info(colored_clusters)
+	
+	
+	# DEVELOPMENT TEST 03/25/2014
+	# Testing the goodness of the clutering with a
+	# chisquare test on the glitches in each cluster
+	with warnings.catch_warnings():
+		warnings.filterwarnings( "ignore", category=UserWarning )
+		chisquare_test(spike_database, labels)
 	
 	
 	'''
