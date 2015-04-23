@@ -9,7 +9,6 @@ import lal
 from glue.ligolw import ligolw, utils, lsctables
 import cPickle as pickle
 
-
 argp = ArgumentParser(description="Convert PCAT information into an appropriate set of LIGO_LW tables.")
 argp.add_argument('--database', help="File to process. Required, (PCAT '.list.' file)")
 argp.add_argument('--channel', help="Name of channel, required. E.g. 'H1:FAKE-STRAIN'")
@@ -30,6 +29,7 @@ proc_row.username = os.path.expanduser("~").split("/")[-1]
 proc_row.comment = "converted from PCAT output"
 proc_table.append(proc_row)
 
+
 #TODO: ADD PCAT RESULTS URL HERE
 
 table = lsctables.New(lsctables.SnglBurstTable, ["ifo", "peak_time", 
@@ -38,32 +38,43 @@ table = lsctables.New(lsctables.SnglBurstTable, ["ifo", "peak_time",
       "central_freq", "channel", "amplitude", "snr",
       "bandwidth"]) #"confidence","chisq", "chisq_dof"
 
+
 #TODO add PCAT type to table??
 
 with open(args.database, "rb") as f:
     database = pickle.load(f)
-
-class GPS():
-    def __init__(self, seconds, decimals):
-        self.seconds = int(seconds)
-        self.nanoseconds = int(decimals*1e8)
-    
+ 
 for index, spike in enumerate(database):
     row = table.RowType()
     
-    tmp_time = int(np.floor(spike.peak_GPS))
-    peak_GPS = GPS(tmp_time, spike.peak_GPS-tmp_time)
-    row.set_peak(peak_GPS)
+    GPS_peak = lsctables.LIGOTimeGPS(spike.peak_GPS)
+    # change the float into a string
+    ns_val = str(GPS_peak.nanoseconds)
+    # check how many digits less than 9 the ns value is
+    n = 9 - len(ns_val)
+    # append the correct number of zeroes to the end of the values 
+    new_ns_val = ns_val + n*'0'
     
-    start_tmp = spike.segment_start + spike.start/float(spike.sampling)
-    start_tmp_int = int(np.floor(start_tmp))
-    start = GPS(start_tmp_int, start_tmp-start_tmp_int)
-    row.set_start(start)
-    # duration is temporary, replace with spike.duration
+    row.peak_time, row.peak_time_ns = GPS_peak.seconds, float(new_ns_val)
+    
+    #row.set_peak(lsctables.LIGOTimeGPS(spike.peak_GPS))
+    
+    start = lsctables.LIGOTimeGPS(spike.peak_GPS - ((spike.waveform.size)/float(spike.sampling))/2.0 )
+    
+    #row.set_start(start)
+    
+    # change the float into a string
+    ns_val = str(start.nanoseconds)
+    # check how many digits less than 9 the ns value is
+    n = 9 - len(ns_val)
+    # append the correct number of zeroes to the end of the values 
+    new_ns_val = ns_val + n*'0'
+
+    row.start_time, row.start_time_ns = start.seconds, float(new_ns_val)
+    
     row.duration = (spike.waveform.size)/float(spike.sampling)
-    #row.duration = spike.duration
     
-    # Duration is simply f_max -f_min, or nyquist frequency minus lowest frequcency (1/segment_len)
+    ## Bandwidth is simply f_max -f_min, or nyquist frequency minus lowest frequcency (1/segment_len)
     row.bandwidth = spike.sampling/2.0 - spike.sampling/float(spike.waveform.size)
     #FIXME: Bandwidth is actually lower because data is high pass filtered.
     # We cannot do much about this until we add this to PCAT.py
@@ -71,7 +82,7 @@ for index, spike in enumerate(database):
     ## Confidence is simply PCAT's threshold (LIGO-T1200125), either add this to PCAT database (add in finder.py)
     ## or simply wait to merge xml_postproc into PCAT as the above
     #row.confidence = 0.0 # FIXME: Do we care about this right?
-    row.central_freq = spike.central_freq
+    row.central_freq = spike.fft_freq[np.argmax(spike.psd)]
 
     #row.chisq = 0
     #row.chisq_dof = 2*band*dur
