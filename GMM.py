@@ -758,7 +758,7 @@ def print_lists(database, labels, cluster_number, ANALYSIS):
 		elif ( 'time' in ANALYSIS ):
 			for j_index, observation in enumerate(database):
 				if ( labels[j_index] == index ):
-					f.write( str(observation.peak_GPS)+"\n")
+					f.write( "{0:.6f}".format(observation.peak_GPS)+"\n")
 		f.close()
 		#print "\tSaved: "+OUTPUT+"."
 
