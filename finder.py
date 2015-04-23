@@ -385,9 +385,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			spike.segment_psd = psd
 			
-			# We don't need the factor of 4 in front of the integral because both spike.psd and psd
-			# are one-sided and are correctly normalized
-			spike.SNR = np.sqrt( 1.0 * (spike.psd/psd).sum()/psd.size )
+			spike.SNR = np.sqrt( 4.0 * (spike.psd/psd).sum()/psd.size )
 			
 			# Save Spike object
 			spikes.append(spike)
