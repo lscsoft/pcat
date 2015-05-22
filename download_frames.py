@@ -19,6 +19,7 @@ import sys
 
 import getopt
 
+import numpy as np
 import pylal.frutils
 
 from utilities_PCAT import progressBar
