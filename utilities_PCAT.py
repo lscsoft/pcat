@@ -457,9 +457,10 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	x_ticks = [start_time]
 	x_ticks_labels = ["0"]
 	interval = end_time-start_time
-	step = (interval)//15
+	step = min((interval)//15, 1)
 	
 	range_end = end_time
+	
 	for i in range(start_time+step, range_end-step, step):
 		x_ticks.append(i)
 		x_ticks_labels.append(tformat(i, start_time))
