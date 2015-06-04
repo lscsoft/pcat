@@ -389,7 +389,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			# We don't need the factor of 4 in front of the integral because both spike.psd and psd
 			# are one-sided and are correctly normalized
-			spike.SNR = np.sqrt( (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
+			spike.SNR = np.sqrt( 4* (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
 			
 			# Check spike polarity
 			if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
