@@ -141,9 +141,9 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
         
         whiten = '--whiten' if (whitening[index] == "YES") else ''
         if opts.start and opts.end:
-            arg = "PCAT.py --noplot --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
+            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
         else:
-            arg = "PCAT.py --noplot --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
+            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
         args.append(arg.split())
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
@@ -489,9 +489,13 @@ def main():
             print FLAG
             locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb-er.ligo.caltech.edu").active 
         else:
-            FLAG = "L1:ODC-MASTER_GRD_IFO_LOCKED:1"
+            #FLAG = "L1:ODC-MASTER_GRD_IFO_LOCKED:1"
+            #FLAG = "L1:ODC-MASTER_SUMMARY:1"
+            # Added August 14th 2015
+            #FLAG = "L1:DMT-UP"
+            FLAG = "L1:DMT-CALIBRATED"
             print FLAG
-            locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://dqsegdb5.phy.syr.edu").active
+            locked_times = DataQualityFlag.query_dqsegdb(FLAG, start_time, end_time, url="https://segments.ligo.org/").active
         
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
@@ -501,6 +505,7 @@ def main():
             for segment in locked_times:
                 # Add one second at the start and remove one second at the end of
                 # each segment to avoid pre-lock-loss transients
+                # Segment is counted as valid only if longer than 60 seconds
                 if ( (segment[1]-10) - (segment[0]+10)) > 60:
                     counter += 1
                     f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
