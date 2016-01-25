@@ -457,7 +457,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	x_ticks = [start_time]
 	x_ticks_labels = ["0"]
 	interval = end_time-start_time
-	step = min((interval)//15, 1)
+	step = max((interval)//15, 1)
 	
 	range_end = end_time
 	
@@ -550,7 +550,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	sizes += 3
 	
 	# Plot the scatterplot for the first panel and colorbar
-	cax = ax.scatter(time_axis, peak_frequencies, c=SNRs, s=sizes, norm=matplotlib.colors.LogNorm(), cmap=matplotlib.cm.jet)
+	cax = ax.scatter(time_axis, peak_frequencies, c=SNRs, s=sizes, norm=matplotlib.colors.LogNorm(), cmap=matplotlib.cm.jet, edgecolor="none")
 	cbar = plt.colorbar(cax, ax=ax, orientation="vertical", shrink=0.7, fraction=0.05, pad=0.01, spacing="proportional")
 
 	# Fix colorbar labels
@@ -582,7 +582,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	# PLOT STAR AS LOUDEST EVENT FOR PLOT 2
 	ax2.plot(time_axis[loudest_event_index], peak_frequencies[loudest_event_index], markers_and_colors[labels[loudest_event_index]][1]+"*", markersize=10)
 	
-    #ax2.add_artist(color_legend)
+	#ax2.add_artist(color_legend)
 	
 	ax2.set_xlim((start_time, end_time))
 	ax2.autoscale(False, axis="both")
