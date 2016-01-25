@@ -932,7 +932,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 		
 		fig.savefig( "time_series/Type_%i/%.3f.pdf" % (labels[index]+1, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
 		plt.close(fig)
-		del ax, ax1, fig
+		
 		
 		if not SILENT:
 			if ( spikes_number > 1 ):
