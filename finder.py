@@ -389,7 +389,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			# We don't need the factor of 4 in front of the integral because both spike.psd and psd
 			# are one-sided and are correctly normalized
-			spike.SNR = np.sqrt( (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
+			spike.SNR = np.sqrt( 4* (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
 			
 			# Check spike polarity
 			if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
@@ -405,7 +405,6 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			max_spike_value = 0
 			max_spike_index = 0
 	
-	# Save last spike
 	if HAS_SPIKE:
 		# Save waveform
 		waveform = data[max_spike_index+removed_points-spike_width/2:max_spike_index+removed_points+spike_width/2] 
@@ -447,11 +446,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 		
 		# Save Spike object
 		spikes.append(spike)
-		
-		HAS_SPIKE = False
-		max_spike_value = 0
-		max_spike_index = 0
-		
+	
 	return spikes
 
 def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed_seconds, f_sampl, normalization=None):

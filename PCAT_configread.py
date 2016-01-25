@@ -176,7 +176,7 @@ def run_PCAT_frequency(list_name, configuration):
         # -c L1:LSC-DARM_OUT_DQ --start 1090221815 --end 1090222285
         # --list list_name -m 10 --components 40 -v 8192
         
-        arg = "PCAT.py --silent --frequency --channel {0} --IFO {1} --frame {2} --list {3} --size {4} -v {5} --components {6} -m {7} --reconstruct".format(channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], variables_number[index], components_number[index], max_clusters[index])
+        arg = "PCAT.py --noplot --silent --frequency --channel {0} --IFO {1} --frame {2} --list {3} --size {4} -v {5} --components {6} -m {7} --reconstruct".format(channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], variables_number[index], components_number[index], max_clusters[index])
         args.append(arg.split())
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
@@ -472,26 +472,33 @@ def main():
         del tmp
     
     if opts.IFO == 'L':
-        FLAG = "L1:DMT-SCIENCE:1"
+        FLAG = "L1:DMT-CALIBRATED"
     else:
-        FLAG = "H1:DMT-SCIENCE:1"
+        FLAG = "H1:DMT-CALIBRATED"
         
     if not opts.list:
+        print "Retrieving locked segments..."
         try:
-            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segdb.ligo.caltech.edu").active
+            locked_times = DataQualityFlag.query(FLAG, start_time, end_time, url="https://segments.ligo.org").active
         except:
             print "Failed to retrieve locked segments, make sure your proxy certificate is loaded, by running"
             print "ligo-proxy-init albert.einstein"
             print "Replacing albert.eistein with your LIGO credentials"
             exit()
         
+        
         # Saved the locked_times list to a txt file in ~/PCAT/out_file 
         times_list = "/home/"+ user_name + "/PCAT/" + out_file
         f = open(times_list, "w")
+        counter = 0 
         if (len(locked_times) > 0):
             for segment in locked_times:
-                f.write(str(int(segment[0]))+"\t"+str(int(segment[1]))+"\n")
-            f.close()
+                # Add one second at the start and remove one second at the end of
+                # each segment to avoid pre-lock-loss transients
+                # Segment is counted as valid only if longer than 60 seconds
+                if ( (segment[1]-10) - (segment[0]+10)) > 60:
+                    counter += 1
+                    f.write(str(int(segment[0]+10))+"\t"+str(int(segment[1])-10)+"\n")
         else:
             f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
             f.close()
@@ -500,7 +507,17 @@ def main():
             final_touch()
             print "Updated summary index."
             
-            sys.exit()
+            return
+        if counter == 0:
+            f.write("No segments available for GPS {0} to {1}\n".format(start_time, end_time))
+            f.close()
+            locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
+            from write_summaries_index import main as final_touch
+            final_touch()
+            print "Updated summary index."
+            return
+        else:
+            f.close()
     else:
         times_list = opts.list
         out_name = opts.list
@@ -515,7 +532,9 @@ def main():
         frequency_configuration = read_config_frequency(configuration_file_frequency)
         shutil.copyfile(configuration_file_frequency, output_dir + "/misc/config_" + os.path.basename(times_list) + "_frequency.txt")
         
-    
+    # Write lock_plot
+    locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
+	
     # Run time domain analysis
     time_results = run_PCAT_time(times_list, configuration_time, start_time, end_time)
     
@@ -526,8 +545,7 @@ def main():
     else:
         print_html_table(times_list, output_dir, base_URL, time_results)
     
-    # Write lock_plot
-    locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
+    
     
     # Define output URL
     summary_URL = "{0}/{1}.html\n".format(base_URL, os.path.basename(times_list))

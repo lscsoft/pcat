@@ -1478,7 +1478,7 @@ def pipeline(args):
 					axs.append( fig.add_subplot(triangle_components, triangle_components, n) )
 					warnings.filterwarnings( "ignore", category=UserWarning )
 					axs[-1].set_title("Principal component {0} scores distribution".format(x))
-					axs[-1].hist(score_matrix[:,x-1], bins=np.sqrt(observations), log=True, histtype="stepfilled", alpha=0.8)
+					axs[-1].hist(score_matrix[:,x-1], bins=min(100,int(np.sqrt(observations))), log=True, histtype="stepfilled", alpha=0.8)
 				else:
 					# Share axis with the plot above the current
 					if (n > triangle_components):
