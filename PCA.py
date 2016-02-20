@@ -256,11 +256,9 @@ def PCA(matrix, components_number=50, variance=None):
 	covariance_matrix = np.cov( matrix.transpose() )
 	eigenvalues, principal_components = eigensystem( covariance_matrix )
 	if variance:
-		if (variance !=0) and (variance <= 1):
-			explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
-			components_number = np.argmax(np.where(explained_variance<variance, explained_variance,0))
-		elif (variance <= 0) or (variance >1):
-			assert False, "variance has to be in the ]0,1] interval"
+		assert (variance > 0) and (variance <= 1), "Variance has to be in the ]0,1] interval"
+		explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
+		components_number = np.argmax(np.where(explained_variance<variance, explained_variance, 0))
 	
 	if ( components_number != 0 ):	
 		fig = plt.figure()
@@ -279,7 +277,7 @@ def PCA(matrix, components_number=50, variance=None):
 		ax.plot( range(1, components_number+1), np.divide( variances, float(total) ), "bo", markersize=3)
 		plt.ylim( (0, 1) )
 		fig.savefig("explained-variance.png", dpi=DPI)
-		print "\tSaved explained-variance.png"
+		#print "\tSaved explained-variance.png"
 		plt.close()
 		fig = plt.figure()
 		ax = fig.add_subplot(111)
@@ -292,8 +290,9 @@ def PCA(matrix, components_number=50, variance=None):
 		ax.set_xlabel("Index")
 		ax.set_ylabel("Value")
 		fig.savefig("Latent_root_distribution.png", bbox_inches='tight', pad_inches=0.2)
-		print "\tSaved Latent_root_distribution.png"
+		#print "\tSaved Latent_root_distribution.png"
 		plt.close()
+	
 	scores_matrix = np.dot( matrix, principal_components )
 		
 	return np.array(scores_matrix), np.array(principal_components), np.array(means), np.array(stds), np.array(eigenvalues)
