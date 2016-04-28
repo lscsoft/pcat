@@ -554,20 +554,22 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 		return []
 	
 	# Exclude triggers that lie outside the desired range [start+removed_seconds, end-removed_seconds]
-	triggers_mask = (triggers > int(start)+removed_seconds) & (triggers < int(end)-removed_seconds)
+	triggers_mask = (triggers >= int(start)+removed_seconds) & (triggers < int(end)-removed_seconds)
 	triggers = triggers[triggers_mask]
 	
-	# Exit if we have no triggers
+	# Return empty list if we have no triggers
 	if len(triggers) == 0:
 		return []
 	
 	# Exclude triggers with are closer than spike_width/2 (time clustering)
 	trigger_differences = np.diff(triggers)
+	# Add 'True' at the beginning of the mask, since len(triggers)=n and len(np.diff(triggers))=n-1
+	# (we are keeping the first trigger)
 	triggers_mask = np.concatenate( ([True], trigger_differences>=(spike_width//2) ) )
 	
 	triggers = triggers[triggers_mask]
 	
-	# Exit if we have no triggers
+	# Return empty list if we have no triggers
 	if len(triggers) == 0:
 		return []
 	

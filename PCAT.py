@@ -55,7 +55,7 @@ from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 64
+PARALLEL_PROCESSES = 34
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -865,7 +865,7 @@ def pipeline(args):
 		
 		# Set up database name and output path
 		if TRIGGERLIST:
-			database_name = "trigfile-{0}_w-%{1}.list".format( os.path.basename(TRIGGERFILE).split(".")[:-1][0], variables) 
+			database_name = "trigfile-{0}_w-{1}.list".format( os.path.basename(TRIGGERFILE).split(".")[:-1][0], variables) 
 		else:
 			database_name = "t-{0:.1f}_w-{1}.list".format( threshold, variables) 
 		
@@ -1148,7 +1148,7 @@ def pipeline(args):
 				# Sample waveforms for triggers in "trigger_file" in "conditioned"
 				found_spikes = get_triggers(conditioned, TRIGGERFILE, out_name, variables,
 					 							f_sampl=required_sampling,
-												removed_seconds=download_overlap_seconds)
+												removed_seconds=download_overlap_seconds, normalization=normalization)
 				
 			else: # We have to search for glitches using find_spikes()
 				found_spikes = find_spikes(conditioned, out_name, threshold, variables,
@@ -1156,7 +1156,7 @@ def pipeline(args):
 											removed_seconds=download_overlap_seconds, 
 											f_sampl=required_sampling,
 											normalization=normalization)
-			
+
 			del conditioned
 			# Update progress bar
 			if not SILENT:
@@ -1495,9 +1495,9 @@ def pipeline(args):
 	
 	print "\n\tA total of {0} out of {1} glitches were discarded".format(discarded_glitches, original_glitches)
 		
-	# Add spike type -1 for discarded glitches
+	# Add spike type 0 for discarded glitches
 	for index, spike in enumerate(discarded_list):
-		spike.type = -1
+		spike.type = 0
 	
 	# Colored clusters contains all types but the noise class. "all_clusters" contains everything, and all_clusters[0] is the noise class
 	colored_clusters = color_clusters( score_matrix, labels )
@@ -1510,7 +1510,7 @@ def pipeline(args):
 	
 	
 	# Save the type the glitch belongs to in the "type" attribute
-	for index, spike in enumerate(data_list):
+	for index, spike in enumerate(results):
 		spike.type = labels[index]+1 # Add one because the labels indexing starts from 0, but we reserved type 0 for the noise class
 	
 	print_cluster_info(all_clusters)
@@ -1583,8 +1583,7 @@ def pipeline(args):
 		del fig
 		del axs
 	print "\tSaved triangle plot ('All scatterplots.png')"	
-	
-	
+		
 	# Compute an "average transient" for each type.
 	# The average transient is obtained by averaging all the glitches
 	# in a certain type in the principal component space, by inverting
@@ -1675,13 +1674,14 @@ def pipeline(args):
 		start_time = times[0][0]
 		end_time = times[-1][1]
 		global glitchgram_start, glitchgram_end
-		all_labels = (np.array(labels)+1).tolist() + [0]*len(discarded_list)
+		# Type labeling in the labels lists starts from 0, add one and make the discarded glitched type 0
+		all_labels = np.array(labels+1).tolist() 	+ [0]*len(discarded_list)
 		if glitchgram_start and glitchgram_end:
-			plot_glitchgram(data_list + [discarded_list], times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, all_labels )
+			plot_glitchgram(data_list+discarded_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, all_labels )
 			for segments in times:
-				plot_glitchgram(data_list + [discarded_list], [segments], segments[0], segments[1], HIGH_PASS_CUTOFF, sampling, all_labels, name="Glitchgram_{0}-{1}".format(segments[0], segments[1]))
+				plot_glitchgram(data_list+discarded_list, [segments], segments[0], segments[1], HIGH_PASS_CUTOFF, sampling, all_labels, name="Glitchgram_{0}-{1}".format(segments[0], segments[1]))
 		else:
-			plot_glitchgram(data_list + discarded_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, all_labels)
+			plot_glitchgram(data_list+discarded_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, all_labels)
 	
 	# If time-domain analysis, create a folder, with subfolders for each
 	# type, to save the transient's time series
@@ -1700,7 +1700,7 @@ def pipeline(args):
 			# Plots for the reconstructed time series
 			reconstructed_spike_time_series(data_list, (score_matrix, principal_components, means, stds), components_number, labels, sampling, RECONSTRUCT, SILENT)
 			# Plots for the noise class
-			spike_time_series([clusters[0]], sampling, SILENT)
+			spike_time_series([discarded_list], sampling, SILENT)
 		else:
 			spike_time_series(all_clusters, sampling, SILENT)
 	elif ( "frequency" in ANALYSIS ) and not NOPLOT:
@@ -1720,7 +1720,7 @@ def pipeline(args):
 	
 	# Dump the database to a pickle file
 	pickle_dump(data_list, database_name)
-	pickle.dump(discarded_glitches, "discarded_" + database_name )
+	pickle_dump(discarded_list, "discarded_" + database_name )
 	print "\tSaved {0}, {1}".format(database_name, "discarded_" + database_name)
 	
 	# Analysis finished. Print output URL	

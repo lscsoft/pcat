@@ -482,7 +482,9 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 	
 	waveform_clusters = [[] for i in range(cluster_number)]
 	
+	glitch_number = 0
 	for cluster_index, cluster in enumerate(clusters):
+		glitch_number += len(cluster)
 		for spike in cluster:
 			waveform_clusters[cluster_index].append(spike.waveform)
 		
@@ -493,7 +495,6 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 	average_observation_matrix = np.array(cluster_medians)
 	
 	observations, waveform_len = np.shape(average_observation_matrix)
-	glitch_number = observations
 	
 	# Initialize axes for summary plot
 	if ( "frequency" in ANALYSIS ):
@@ -566,9 +567,9 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					
 					if index == 0:
-						ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+						ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					else:
-						ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+						ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					
 					ax_all[-1].plot( freq_array, np.power(10, element), markers_and_colors[index][1]+marker, linewidth=0.4)
 					ax_all[index].autoscale(enable=True, axis="y", tight=True)
@@ -579,9 +580,9 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 					ax.plot(freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					if index == 0:
-						ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+						ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					else:
-						ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+						ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					ax_all[index].set_xticks( np.logspace(np.log10(low), np.log10(high), num=10 ))
 					ax_all[index].set_xticklabels([ "%.2f" % el for el in ax.get_xticks()])
 					ax_all[-1].plot( freq_array, np.power(10, element), markers_and_colors[index][1]+marker, linewidth=0.4)
@@ -598,9 +599,9 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 				ax_all[index].plot(time_axis, element, "b-", linewidth = 0.4)
 				ax_all[index].autoscale(True, "both", tight=True)
 				if index == 0:
-					ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+					ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 				else:
-					ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index, len(clusters[index]), observations, percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
+					ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index, len(clusters[index]), glitch_number, percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			elif ( "generic" in ANALYSIS ):
 				assert False, "This is broken"
 				fig = plt.figure()
@@ -623,14 +624,14 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 			
 			if ("time" in ANALYSIS):
 				if index == 0:
-					ax.set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+					ax.set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 				else:
-					ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index, len(clusters[index]), observations, percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
+					ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index, len(clusters[index]), glitch_number, percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			else:
 				if index == 0:
-					ax.set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent) )
+					ax.set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 				else:
-					ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), observations, percent))
+					ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent))
 			if ( "frequency" in ANALYSIS):
 				plt.autoscale(True, axis="y", tight=True)
 			
@@ -755,7 +756,7 @@ def create_spectrogram(data, sampling, output, title=""):
 	# Set FFT to len(data) to obtain the maximum resolution in frequency
 	NFFT = len(data)//8
 	# Compute a spectrogram using matplotlib.mlab.specgram
-	pxx, freq, time = matplotlib.mlab.specgram( data, NFFT=NFFT, Fs=sampling, noverlap=NFFT//4, pad_to=int(sampling) )
+	pxx, freq, time = matplotlib.mlab.specgram( data, NFFT=NFFT, Fs=sampling, noverlap=int(NFFT*0.95), pad_to=int(sampling) )
 	
 	halfbin_time = (time[1] - time[0]) / 2.0
 	halfbin_freq = (freq[1] - freq[0]) / 2.0
@@ -770,10 +771,10 @@ def create_spectrogram(data, sampling, output, title=""):
 	time = (time - time[half_time])*1000
 	
 	# Plot the spectrogram	
-	cax = ax.contourf(time, freq, 10*np.log10(pxx), 50)
+	cax = ax.contourf(time, freq, pxx, 1000)
 	# Plot the colorbar
 	cbar = plt.colorbar(cax, ax=ax, orientation="vertical", shrink=0.7, fraction=0.05, pad=0.01, spacing="uniform")
-	cbar.set_label("Energy (dB)")
+	cbar.set_label("Energy")
 	
 	# Values for interpolation karg are *None*, 'none', 'nearest', 'bilinear',
 	#'bicubic', 'spline16', 'spline36', 'hanning', 'hamming',
@@ -844,10 +845,9 @@ def reconstructed_spike_time_series(database, PCA_info, components_number, label
 		for index, spike in enumerate(database):
 			# Before the PCA is computed, all waveforms are normalized
 			# by dividing them by the norm attribute. To correctly invert
-			# the PCAs one has to multiply by norm.
+			# the PCA, one has to multiply by norm.
 			
 			tmp = new_data[index]*spike.norm
-			#tmp = new_data[index]
 			reconstructed.append(tmp)
 			spike.reconstructed = tmp
 			spike.PCs_used = components_number
@@ -1175,10 +1175,12 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	</body></html>""".format(x, y)
 	
 	
-	if ( "time" in ANALYSIS):
-		fmt = "<area shape='circle' coords='%f,%f,2' href='time_series/Type_%i/%0.3f.pdf' title='GPS %.3f - Type %i'>"
+	if "time" in ANALYSIS:
+		fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
+	elif "frequency" in ANALYSIS:
+		fmt = "<area shape='circle' coords='%f,%f,3' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
 	else:
-		fmt = "<area shape='circle' coords='%f,%f,2' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
+		assert False, "Analyis not time nor frequency. What are you trying to do?"
 		
 	# need to do height - y for the image-map
 	fmts = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords, info_list) ]
@@ -1279,7 +1281,7 @@ def correlation_test(clusters, ANALYSIS):
 		plt.ylim((-1.05,1.05))
 	
 	# Set title for the first subplot
-	ax[0].set_title("Correlation Coefficients:\nNoise {0}/{1} ({2:.2f}%)".format(len(cluster_correlations[0]), int(glitch_number), (len(cluster_correlations[0])/glitch_number)*100))
+	ax[0].set_title("Correlation Coefficients:\nNoise {0} of {1} ({2:.2f}%)".format(len(cluster_correlations[0]), int(glitch_number), (len(cluster_correlations[0])/glitch_number)*100))
 	
 	# Get image coordinates for each of the points plotted in the previous loop
 	for index, correlations in enumerate(cluster_correlations):
@@ -1313,7 +1315,7 @@ def correlation_test(clusters, ANALYSIS):
 	
 	if "time" in ANALYSIS:
 		fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
-		fmtnoise = "<area shape='circle' coords='%f,%f,3' href='time_series/noise%s/%0.3f.pdf' title='GPS %0.2f - Noise %s ' >"
+		fmtnoise = "<area shape='circle' coords='%f,%f,3' href='time_series/noise%s/%0.3f.pdf' title='GPS %0.2f - Noise %s' >"
 	elif "frequency" in ANALYSIS:
 		fmt = "<area shape='circle' coords='%f,%f,3' href='PSDs/Type_%i/%s.png' title='%s - Type %i'>"
 		fmtnoise = "<area shape='circle' coords='%f,%f,3' href='PSDs/noise%s/%s.png' title='%s - Noise %s'>"
@@ -1324,10 +1326,15 @@ def correlation_test(clusters, ANALYSIS):
 	fmts = []
 	
 	for index, infos in enumerate(info_list):
-		if index == 0:
-			fmts.extend([fmtnoise % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
+		stuff, gps = infos
+		ix = icoords[index][0]
+		iy = icoords[index][1]
+		x = stuff
+		y = gps
+		if stuff == "":
+			fmts.extend(fmtnoise % (ix, height-iy, x, y, y, x))
 		else:
-			fmts.extend([fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
+			fmts.extend(fmt % (ix, height-iy, x, y, y, x))
 	
 	plt.close(fig)
 	
@@ -1357,7 +1364,10 @@ def matched_filtering_test(clusters, ANALYSIS):
 	assert ANALYSIS == "time"
 	
 	cluster_number = len(clusters)
-	glitch_number = float(np.array(clusters).size)
+	glitch_number = 0.0
+	for cluster in clusters:
+		glitch_number += len(cluster)
+	
 	info_list = [[] for i in range(cluster_number)]
 	
 	for cluster_index, cluster in enumerate(clusters):
@@ -1369,7 +1379,10 @@ def matched_filtering_test(clusters, ANALYSIS):
 					info_list[cluster_index].append( ( cluster_index, spike.peak_GPS ) )
 			elif ( "frequency" in ANALYSIS):
 				info = "%s-%s" % (spike.segment_start, spike.segment_end )
-				info_list[cluster_index].append( ( cluster_index, info) )
+				if cluster_index == 0:
+					info_list[cluster_index].append( ( "", info) )
+				else:
+					info_list[cluster_index].append( ( cluster_index, info) )
 			elif ( "generic" in ANALYSIS ):
 				return
 			else:
@@ -1451,7 +1464,7 @@ def matched_filtering_test(clusters, ANALYSIS):
 		plt.ylim((-0.05,1.05))
 	
 	# Set title for the first subplot
-	ax[0].set_title("Normalized matched filter results:\nNoise {0}/{1} ({2:.2f}%)".format(len(cluster_matched_filters[0]), int(glitch_number), (len(cluster_matched_filters[0])/glitch_number)*100))
+	ax[0].set_title("Normalized matched filter results:\nNoise {0} of {1} ({2:.2f}%)".format(len(cluster_matched_filters[0]), int(glitch_number), (len(cluster_matched_filters[0])/glitch_number)*100))
 	
 	# Get image coordinates for each of the points plotted in the previous loop
 	for index, match in enumerate(cluster_matched_filters):
@@ -1472,16 +1485,13 @@ def matched_filtering_test(clusters, ANALYSIS):
 	# Save figure
 	fig.savefig("Types_matched_filtering.png", dpi=fig.get_dpi())
 	
-	###
 	# Setup the clickable HTML file	
-	
 	# The minimal 'template' to generate an image map:
 	tmpl = """
 	<html><head><title>Matched filtering</title></head><body>
 	<img src="%s" usemap="#points" border="0">
 	<map name="points">%s</map>
 	</body></html>"""
-	
 	
 	if "time" in ANALYSIS:
 		fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
@@ -1494,12 +1504,12 @@ def matched_filtering_test(clusters, ANALYSIS):
 		
 	# need to do height - y for the image-map
 	fmts = []
-	
 	for index, infos in enumerate(info_list):
 		if index == 0:
-			fmts.extend([fmtnoise % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
+			fm = fmtnoise
 		else:
-			fmts.extend([fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
+			fm = fmt
+		fmts.extend([fm % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords[index], infos) ])	
 	
 	plt.close(fig)
 	
