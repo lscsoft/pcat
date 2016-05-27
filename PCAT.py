@@ -55,7 +55,7 @@ from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 34
+PARALLEL_PROCESSES = 64
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -269,6 +269,9 @@ def usage():
 	print "\tSpecifies the maximum number"
 	print "\tof clusters. Integer, default is 10."
 	
+	print "   --discard_percentage percentage"
+	print "\tSpecifies the minimum size of a cluster, classes with fewer than this percentage of the total number of glitches than this are discarded and classified as 'noise'. percentage has to be between 0 and 1."
+	
 	print "   -v variables_n, --variables variables_n"
 	print "\tIf performing time-domain analysis, this sets the time resolution"
 	print "\ti.e. the temporal length of the sampled transients.\n"
@@ -374,7 +377,7 @@ def check_options_and_args(argv):
 														'filter', 'maxclusters=', 'whiten', 'size=', 'nohighpass', 'resample=',\
 														'highpasscutoff=', 'energy', "save_timeseries", "clean", "noresample",\
 														"reconstruct", 'noplot', 'silent', "glitchgram_start=", "glitchgram_end=",\
-														"variance=", "triggers="])
+														"variance=", "triggers=", "discard_percent="])
 	except getopt.error, msg:
 		print msg
 		sys.exit(1)
@@ -456,6 +459,13 @@ def check_options_and_args(argv):
 			AUTOCHOOSE_COMPONENTS = True
 			VARIANCE_PERCENTAGE = float(value)
 			components_number = 0
+		elif option in ( "--discard_percent" ):
+			global discard_percent
+			discard_percent = float(value)
+			if (discard_percent >= 1) or (discard_percent < 0):
+				print "Usage: --discard_percent percent, 'percent' has to be between 0 and 1"
+				print "Quitting."
+				sys.exit()
 		else:
 			print "Unknown option."
 			sys.exit()
@@ -493,7 +503,7 @@ def check_options_and_args(argv):
 		# explained variance.
 		AUTOCHOOSE_COMPONENTS = True
 		VARIANCE_PERCENTAGE = 0.75
-				
+	
 	if not ( any( flag in o for flag in [ "--start", "--end", "--list"] for o in opts )):
 		print "Start and end GPS time or a list of GPS times have to be supplied. Quitting."
 		sys.exit()
@@ -540,6 +550,13 @@ def check_options_and_args(argv):
 			print "Please choose between --whiten and --filter."
 			print "Quitting."
 			sys.exit()
+	
+	# Default fallback value for discard_percent: 5%
+	try:
+		if discard_percent:
+			pass
+	except:
+		discard_percent = 0.05
 	
 	############################################################################
 	# End of data checking
@@ -740,6 +757,7 @@ def print_parameters():
 			print "\t\t\t\t\t\tfor {0:.1%} of the variance".format(VARIANCE_PERCENTAGE)
 		else:
 			print "\t\t Identified transients plots:\tRaw time series"
+		print "\t\t Noise class threshold:\t {0:.1f}%\n\t\t(classes with fewer than this percentage of the total number of glitches than this are discarded and classified as 'noise')".format(discard_percent*100)
 	elif ( "frequency" in ANALYSIS ):
 		print "\t- Frequency Domain:\n"
 		# The 'resolution' variable is used when computing the PSD, and is not 
@@ -865,7 +883,11 @@ def pipeline(args):
 		
 		# Set up database name and output path
 		if TRIGGERLIST:
-			database_name = "trigfile-{0}_w-{1}.list".format( os.path.basename(TRIGGERFILE).split(".")[:-1][0], variables) 
+			try: 
+				name = os.path.basename(TRIGGERFILE).split(".")[:-1][0]
+			except:
+				name = os.path.basename(TRIGGERFILE)
+			database_name = "trigfile-{0}_w-{1}.list".format( name, variables) 
 		else:
 			database_name = "t-{0:.1f}_w-{1}.list".format( threshold, variables) 
 		
@@ -893,7 +915,11 @@ def pipeline(args):
 		
 		OUTPUT += "{0}_".format(normalization)
 		if TRIGGERLIST:
-			OUTPUT += "trigfile-{0}_w-{1}/".format(os.path.basename(TRIGGERFILE).split(".")[:-1][0], variables)
+			try: 
+				name = os.path.basename(TRIGGERFILE).split(".")[:-1][0]
+			except:
+				name = os.path.basename(TRIGGERFILE)
+			OUTPUT += "trigfile-{0}_w-{1}/".format(name, variables)
 		else:
 			OUTPUT += "t-{0}_w-{1}/".format(threshold, variables)
 		
@@ -949,7 +975,7 @@ def pipeline(args):
 	# Print parameters parsed by check_options_and_args()
 	print_parameters()
 	
-	print "Saved URL:\n  {0}\n".format(results_URL + "parameters.txt")
+	print "Saved URL:\n  {0}\n".format(results_URL)
 	
 	# Open new file to save the parameters for the run in 
 	f = open(output_dir + "parameters.txt", "w")
@@ -1466,10 +1492,13 @@ def pipeline(args):
 		for i in range(cluster_number):
 			mask = np.array(labels) == i
 			current_type_glitches = np.array(results)[mask]
+			
 			type_size = len(current_type_glitches)
+			type_percent = float(type_size)/float(original_glitches)
+			#print "Type {0}: {1} ({2:.1f})".format(i, type_size, type_percent)
 			
 			# One cluster has less than two glitches. Remove the glitches and re-run PCA/GMM
-			if type_size <= 2:
+			if type_percent <= discard_percent:
 				# Save the discarded glitches
 				discarded_list += current_type_glitches.tolist()
 				discarded_glitches += type_size
@@ -1675,7 +1704,7 @@ def pipeline(args):
 		end_time = times[-1][1]
 		global glitchgram_start, glitchgram_end
 		# Type labeling in the labels lists starts from 0, add one and make the discarded glitched type 0
-		all_labels = np.array(labels+1).tolist() 	+ [0]*len(discarded_list)
+		all_labels = np.array(labels).tolist() 	+ [0]*len(discarded_list)
 		if glitchgram_start and glitchgram_end:
 			plot_glitchgram(data_list+discarded_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, all_labels )
 			for segments in times:
@@ -1699,8 +1728,9 @@ def pipeline(args):
 		if RECONSTRUCT:
 			# Plots for the reconstructed time series
 			reconstructed_spike_time_series(data_list, (score_matrix, principal_components, means, stds), components_number, labels, sampling, RECONSTRUCT, SILENT)
-			# Plots for the noise class
-			spike_time_series([discarded_list], sampling, SILENT)
+			# Plots for the unclassified
+			if len(discarded_list) > 0:
+				spike_time_series([discarded_list], sampling, SILENT)
 		else:
 			spike_time_series(all_clusters, sampling, SILENT)
 	elif ( "frequency" in ANALYSIS ) and not NOPLOT:

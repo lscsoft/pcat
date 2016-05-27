@@ -335,7 +335,7 @@ def three_plot(colored_clusters, x, y, z, output):
 		tmp = np.matrix(element)
 		ax.scatter(tmp[:,0].tolist(), tmp[:,1].tolist(),tmp[:,2].tolist(),\
 				 			c = str(colors[index]), marker = "." , markersize = 1)
-		plotlabels.append(str(index) if (index != 0) else "Noise")
+		plotlabels.append(str(index) if (index != 0) else "Unclassified")
 	ax.legend(plotlabels, loc = 'upper right', markerscale = 5)
 	ax.grid( linestyle = '--' )
 	plt.show()
@@ -432,7 +432,7 @@ def configure_subplot_time(subplot_number):
 			ax.append( fig.add_subplot(subplot_number, 1, index+1, sharex=ax[index-1]) )
 		ax[index].grid(which='both')#, axis='both')
 		if index == 0:
-			ax[index].set_title("Noise" )
+			ax[index].set_title("Unclassified" )
 		else:
 			ax[index].set_title("Type " + str(index) )
 		ax[index].set_ylabel("Amplitude [counts]")
@@ -450,7 +450,7 @@ def configure_subplot_freq(subplot_number, logy=True):
 		if (index != 0):
 			ax.append( fig.add_subplot(subplot_number, 1, index+1, sharex=ax[index-1]) )
 		if index == 0:
-			ax[index].set_title("Noise" )
+			ax[index].set_title("Unclassified" )
 		else:
 			ax[index].set_title("Type " + str(index) )
 		ax[index].set_ylabel("Power Spectral Density [Counts^2/Hz]")
@@ -468,29 +468,41 @@ def configure_subplot_freq(subplot_number, logy=True):
 
 
 def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
-	""" For each cluster compute an average observation from all observations in that cluster using a median.
+	""" Compute an median observation for each cluster.
 		The median is used for outlier rejection.
 		
-		For each average observation, perform inverse PCA (multiplying by the transpose of the 
+		For each median observation, perform inverse PCA (multiplying by the transpose of the 
 		principal components matrix and then adding the mean for each observation)
 		
 		After the average types have been computed, these are plotted. 
 	"""
 	
 	DPI = 100
+	
 	cluster_number = len(clusters)
+	if len(clusters[0]) == 0:
+		no_noise = True
+	else:
+		no_noise = False
 	
 	waveform_clusters = [[] for i in range(cluster_number)]
 	
 	glitch_number = 0
-	for cluster_index, cluster in enumerate(clusters):
-		glitch_number += len(cluster)
-		for spike in cluster:
-			waveform_clusters[cluster_index].append(spike.waveform)
+	for index, cluster in enumerate(clusters):
+		# Skip noise class if empty
+		if index == 0 and no_noise:
+			pass
+		else:
+			glitch_number += len(cluster)
+			for spike in cluster:
+				waveform_clusters[index].append(spike.waveform)
 		
 	cluster_medians = []
-	for cluster in waveform_clusters:
-		cluster_medians.append(np.median(cluster, axis=0))
+	for index, cluster in enumerate(waveform_clusters):
+		if index == 0 and no_noise:
+			cluster_medians.append(np.zeros_like(clusters[-1][0].waveform))
+		else:
+			cluster_medians.append(np.median(cluster, axis=0))
 	
 	average_observation_matrix = np.array(cluster_medians)
 	
@@ -530,6 +542,8 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 	if ANALYSIS == "time":
 		polarities = [ {'plus': 0, 'minus': 0} for i in range(cluster_number)]
 		for index2, cluster in enumerate(clusters):
+			if len(cluster) == 0:
+				continue
 			for index, spike in enumerate(cluster):
 				if (spike.polarity == 1):
 					polarities[index2]['plus'] += 1
@@ -538,9 +552,13 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 		polarities_plus_percent = []
 		polarities_minus_percent = []
 		for i in range(cluster_number):
-			polarities_plus_percent.append(  100 * ( polarities[i]['plus']/float(len(clusters[i])) ) )
-			polarities_minus_percent.append( 100 * ( polarities[i]['minus']/float(len(clusters[i])) ) )
-		
+			if len(clusters[i]) != 0:
+				polarities_plus_percent.append(  100 * ( polarities[i]['plus']/float(len(clusters[i])) ) )
+				polarities_minus_percent.append( 100 * ( polarities[i]['minus']/float(len(clusters[i])) ) )
+			else:
+				polarities_plus_percent.append(  0 )
+				polarities_minus_percent.append( 0 )
+			
 	# Default line marker is a continous line, switch to
 	# dotted line if there are more than 7 types
 	marker = "-"
@@ -567,7 +585,7 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					
 					if index == 0:
-						ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
+						ax_all[index].set_title("Unclassified: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					else:
 						ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					
@@ -580,7 +598,7 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 					ax.plot(freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					ax_all[index].plot( freq_array, np.power(10, element), "r-", linewidth = 0.4)
 					if index == 0:
-						ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
+						ax_all[index].set_title("Unclassified: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					else:
 						ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 					ax_all[index].set_xticks( np.logspace(np.log10(low), np.log10(high), num=10 ))
@@ -599,7 +617,7 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 				ax_all[index].plot(time_axis, element, "b-", linewidth = 0.4)
 				ax_all[index].autoscale(True, "both", tight=True)
 				if index == 0:
-					ax_all[index].set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
+					ax_all[index].set_title("Unclassified: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 				else:
 					ax_all[index].set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index, len(clusters[index]), glitch_number, percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			elif ( "generic" in ANALYSIS ):
@@ -615,21 +633,21 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 					ax.plot(element, 'r-', linewidth = 0.4)
 					ax_all.plot(element, markers_and_colors[index]+'-', linewidth = 0.4)
 				
-			if index == 0:
-				output = str(cluster_number) + "-clusters_noise.pdf"
-				plotlabels.append( "Noise ({1:.1f}%)".format(index, percent) )
+			if index == 0 and not no_noise:
+				output = str(cluster_number) + "-unclassified.pdf"
+				plotlabels.append( "Unclassified ({1:.1f}%)".format(index, percent) )
 			else:
 				output = str(cluster_number) + "-clusters_#" + str(index) + ".pdf"
 				plotlabels.append( "{0:d} ({1:.1f}%)".format(index, percent) )
 			
 			if ("time" in ANALYSIS):
-				if index == 0:
-					ax.set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
+				if index == 0 and not no_noise:
+					ax.set_title("Unclassified: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 				else:
 					ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%) - Polarity: {4:.1f}% positive {5:.1f}% negative ".format(index, len(clusters[index]), glitch_number, percent, polarities_plus_percent[index], polarities_minus_percent[index]) )
 			else:
-				if index == 0:
-					ax.set_title("Noise: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
+				if index == 0 and not no_noise:
+					ax.set_title("Unclassified: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent) )
 				else:
 					ax.set_title("Type {0:d}: {1:d} of {2:d} observations ({3:.1f}%)".format(index, len(clusters[index]), glitch_number, percent))
 			if ( "frequency" in ANALYSIS):
@@ -677,9 +695,9 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 			with warnings.catch_warnings():
 				warnings.filterwarnings( "ignore", category=UserWarning )
 				
-				if index == 0:
-					create_spectrogram(element, f_sampl, "Noise_Spectrogram", "Noise") 
-				else:
+				if index == 0 and not no_noise:
+					create_spectrogram(element, f_sampl, "Unclassified_Spectrogram", "Unclassifie") 
+				elif index != 0:
 					create_spectrogram(element, f_sampl, "Type_"+str(index)+"_Spectrogram", "Type " + str(index) ) 
 		if cluster_number > 1:
 			print "\tSaved types spectrograms"
@@ -729,7 +747,7 @@ def print_lists(clusters, ANALYSIS):
 	
 	for index, cluster in enumerate(clusters):
 		if index == 0:
-			OUTPUT = "Noise_class.txt"
+			OUTPUT = "Unclassified.txt"
 		else:
 			OUTPUT = "Type_" + str(index) + ".txt"
 		
@@ -925,7 +943,7 @@ def reconstructed_spike_time_series(database, PCA_info, components_number, label
 
 def spike_time_series(clusters, f_sampl, SILENT=False):
 	spikes_number = np.array(clusters).size
-	waveform_length = len(clusters[0][0].waveform)
+	waveform_length = len(clusters[-1][-1].waveform)
 	
 	# Create a progress bar
 	if not SILENT:
@@ -945,36 +963,38 @@ def spike_time_series(clusters, f_sampl, SILENT=False):
 	
 	# Start plotting
 	for cluster_index, cluster in enumerate(clusters):
-		for index, spike in enumerate(cluster):
-			labels_list = []
-			fig = plt.figure(figsize=(12,6), dpi=300)
-			ax = fig.add_subplot(111)
-			
-			ax.set_title( "Peak at: " + str(spike.peak_GPS) )
-			ax.grid( ls = '--' )
-			ax.set_autoscalex_on(False)
-			
-			
-			if f_sampl:
-				ax.set_xlim( ( x_min, x_max ) )
-				ax.plot( x_axis, spike.polarity*spike.waveform, "b")
-				labels_list.append("Time series")
-				ax.set_xlabel("Time [ms]")
-				ax.set_ylabel("Amplitude [counts] ")
-			else:
-				plt.xlim( ( 0, waveform_length ) )
-				ax.plot(spike.waveform)
-			
-			if cluster_index == 0:
-				fig.savefig( "time_series/noise/{1:.3f}.pdf".format(cluster_index, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
-			else:
-				fig.savefig( "time_series/Type_{0}/{1:.3f}.pdf".format(cluster_index, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
-			plt.close(fig)
-			
-			
-			if not SILENT:
-				if ( spikes_number > 1 ):
-					progress(index+1)
+		if len(cluster) >0 :
+			for index, spike in enumerate(cluster):
+				labels_list = []
+				fig = plt.figure(figsize=(12,6), dpi=300)
+				ax = fig.add_subplot(111)
+				
+				ax.set_title( "Peak at: " + str(spike.peak_GPS) )
+				ax.grid( ls = '--' )
+				ax.set_autoscalex_on(False)
+				
+				
+				if f_sampl:
+					ax.set_xlim( ( x_min, x_max ) )
+					ax.plot( x_axis, spike.polarity*spike.waveform, "b")
+					labels_list.append("Time series")
+					ax.set_xlabel("Time [ms]")
+					ax.set_ylabel("Amplitude [counts] ")
+				else:
+					plt.xlim( ( 0, waveform_length ) )
+					ax.plot(spike.waveform)
+				
+				if cluster_index == 0:
+					fig.savefig( "time_series/noise/{1:.3f}.pdf".format(cluster_index, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
+				else:
+					fig.savefig( "time_series/Type_{0}/{1:.3f}.pdf".format(cluster_index, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
+				plt.close(fig)
+				
+				
+				if not SILENT:
+					if ( spikes_number > 1 ):
+						progress(index+1)
+
 	del labels_list
 
 def plot_psds(database, PCA_info, components_number, labels, f_sampl, ANALYSIS="frequency", low=None, high=None, RECONSTRUCT=False, SILENT=False):
@@ -1257,7 +1277,7 @@ def correlation_test(clusters, ANALYSIS):
 			ax[-1].plot(glitch_indexes, correlations, 'b.')
 		else:
 			if index == 0:
-				ax[-1].set_title("Noise : 1 element".format(index))
+				ax[-1].set_title("Unclassified : 1 element".format(index))
 			else:
 				ax[-1].set_title("Type #{0}: 1 element".format(index))
 			ax[-1].plot(range(10), np.zeros(10))
@@ -1270,7 +1290,7 @@ def correlation_test(clusters, ANALYSIS):
 			xys[index] = [(1, correlations[0])]
 		
 		if index == 0:
-			ax[-1].set_title("Noise: {1} of {2} ({3:.2f}%)".format(index, len(correlations), int(glitch_number), (len(correlations)/glitch_number)*100))
+			ax[-1].set_title("Unclassified: {1} of {2} ({3:.2f}%)".format(index, len(correlations), int(glitch_number), (len(correlations)/glitch_number)*100))
 		else:
 			ax[-1].set_title("Type #{0}: {1} of {2} ({3:.2f}%)".format(index, len(correlations), int(glitch_number), (len(correlations)/glitch_number)*100))
 		ax[-1].grid(which="both")
@@ -1409,16 +1429,22 @@ def matched_filtering_test(clusters, ANALYSIS):
 		
 		
 	for index, cluster in enumerate(clusters):
-		median = np.median([spike.waveform for spike in cluster], axis=0 )
-		representatives.append(median)
-		# np.corrcoef returns the correlation matrix, which is symmetric (2x2).
-		median_transform = np.fft.rfft(median)
-		spike_transforms = [np.fft.rfft(spike.waveform) for spike in cluster]
+		if len(cluster) > 1:
+			median = np.median([spike.waveform for spike in cluster], axis=0 )
+			representatives.append(median)
+			# np.corrcoef returns the correlation matrix, which is symmetric (2x2).
+			median_transform = np.fft.rfft(median)
+			spike_transforms = [np.fft.rfft(spike.waveform) for spike in cluster]
+			
+			# Factor of two because the ffts are one-sided and we're integrating over all frequencies
+			matched_filters = [inner_product(median_transform, spike_transform) for spike_transform in spike_transforms]
+			cluster_matched_filters.append(matched_filters)
+		elif len(cluster) != 0:
+			spike_transform = [np.fft.rfft(spike.waveform) for spike in cluster]
+			cluster_matched_filters.append([inner_product(spike_transform, spike_transform)])
+		else:
+			cluster_matched_filters.append([0])
 		
-		# Factor of two because the ffts are one-sided and we're integrating over all frequencies
-		matched_filters = [inner_product(median_transform, spike_transform) for spike_transform in spike_transforms]
-		cluster_matched_filters.append(matched_filters)
-	
 	# Plot matched filtering coefficients:
 	fig = plt.figure(figsize=(12, 6*cluster_number), dpi=100)
 	plt.subplots_adjust(left=0.10, right=0.95, top=0.97, bottom=0.05)
@@ -1439,7 +1465,7 @@ def matched_filtering_test(clusters, ANALYSIS):
 			ax[-1].plot(glitch_indexes, match, 'b.')
 		else:
 			if index == 0:
-				ax[-1].set_title("Noise: 1 element".format(index))
+				ax[-1].set_title("Unclassified: 1 element".format(index))
 			else:
 				ax[-1].set_title("Type #{0}: 1 element".format(index))
 			ax[-1].plot(range(10), np.zeros(10))
@@ -1452,19 +1478,19 @@ def matched_filtering_test(clusters, ANALYSIS):
 			xys[index] = [(1, match[0])]
 		
 		if index == 0:
-			ax[-1].set_title("Noise: {1} of {2} ({3:.2f}%)".format(index, len(match), int(glitch_number), (len(match)/glitch_number)*100))
+			ax[-1].set_title("Unclassified: {1} of {2} ({3:.2f}%)".format(index, len(match), int(glitch_number), (len(match)/glitch_number)*100))
 		else:
 			ax[-1].set_title("Type #{0}: {1} of {2} ({3:.2f}%)".format(index, len(match), int(glitch_number), (len(match)/glitch_number)*100))
 		
 		ax[-1].grid(which="both")
 		
 		ax[-1].set_xlabel("Observation")
-		ax[-1].set_ylabel("Matched filter")
+		ax[-1].set_ylabel("Correlation")
 		plt.xlim((0, len(match)))
-		plt.ylim((-0.05,1.05))
+		plt.ylim((-1.05,1.05))
 	
 	# Set title for the first subplot
-	ax[0].set_title("Normalized matched filter results:\nNoise {0} of {1} ({2:.2f}%)".format(len(cluster_matched_filters[0]), int(glitch_number), (len(cluster_matched_filters[0])/glitch_number)*100))
+	ax[0].set_title("Correlation results:\nNoise {0} of {1} ({2:.2f}%)".format(len(cluster_matched_filters[0]), int(glitch_number), (len(cluster_matched_filters[0])/glitch_number)*100))
 	
 	# Get image coordinates for each of the points plotted in the previous loop
 	for index, match in enumerate(cluster_matched_filters):
@@ -1483,12 +1509,12 @@ def matched_filtering_test(clusters, ANALYSIS):
 		icoords[index] = zip(ixs, iys)
 	
 	# Save figure
-	fig.savefig("Types_matched_filtering.png", dpi=fig.get_dpi())
+	fig.savefig("Correlation.png", dpi=fig.get_dpi())
 	
 	# Setup the clickable HTML file	
 	# The minimal 'template' to generate an image map:
 	tmpl = """
-	<html><head><title>Matched filtering</title></head><body>
+	<html><head><title>Correlation</title></head><body>
 	<img src="%s" usemap="#points" border="0">
 	<map name="points">%s</map>
 	</body></html>"""
@@ -1513,11 +1539,11 @@ def matched_filtering_test(clusters, ANALYSIS):
 	
 	plt.close(fig)
 	
-	f = open("Types_matched_filtering.html", "w")
-	print >> f, tmpl % ("Types_matched_filtering.png", "\n".join(fmts))
+	f = open("Correlation.html", "w")
+	print >> f, tmpl % ("Correlation.png", "\n".join(fmts))
 	f.close()
 	plt.close(fig)
-	print "\n\tSaved: Types_matched_filtering.html"
+	print "\n\tSaved: Correlation.html"
 	
 	
 	return
@@ -1607,7 +1633,7 @@ def main():
 				print "\n\tPlotting time series..."
 				for i in range(cluster_number):
 					if i == 0:
-						foldername = "noise"
+						foldername = "unclassified"
 					else:
 						foldername = "Type_"+str(i)
 					try:
@@ -1623,7 +1649,7 @@ def main():
 				# Plot a list of PSDs with the relative times:
 				for i in range(cluster_number):
 					if i == 0:
-						foldername = "noise"
+						foldername = "unclassified"
 					else:
 						foldername = "Type_"+str(i)
 					try:
