@@ -5,7 +5,7 @@
 # uncomment for 3D plots
 #from mpl_toolkits.mplot3d import axes3d
 
-from utilities_PCAT import *
+from pcat.utils import *
 STANDARDIZE_COLUMNS = False
 
 global DPI
