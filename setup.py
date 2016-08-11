@@ -4,8 +4,6 @@
 """Setup the PCAT package
 """
 
-from __future__ import print_function
-
 import glob
 import os.path
 
@@ -35,9 +33,7 @@ requires = [
 # -- run setup ----------------------------------------------------------------
 
 packagenames = find_packages()
-print(packagenames)
 scripts = glob.glob(os.path.join('bin', '*'))
-print(scripts)
 
 setup(name=DISTNAME,
       provides=[PACKAGENAME],
