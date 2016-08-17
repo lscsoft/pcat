@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 import sys
 import os
 from argparse import ArgumentParser
@@ -79,7 +80,7 @@ for index, spike in enumerate(database):
     #FIXME: Bandwidth is actually lower because data is high pass filtered.
     # We cannot do much about this until we add this to PCAT.py
     
-    ## Confidence is simply PCAT's threshold (LIGO-T1200125), either add this to PCAT database (add in finder.py)
+    ## Confidence is simply PCAT's threshold (LIGO-T1200125), either add this to PCAT database (add in `pcat.finder`)
     ## or simply wait to merge xml_postproc into PCAT as the above
     #row.confidence = 0.0 # FIXME: Do we care about this right?
     row.central_freq = spike.fft_freq[np.argmax(spike.psd)]

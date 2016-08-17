@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# encoding: utf-8
+# coding: utf-8
 """ PCAT.py
 
 First version by Daniele Trifirò on 2013-08-17.
@@ -14,13 +14,13 @@ PCAT Pipeline:
 		Read from the frame files (and save if requested) time series
 		for the given time interval.
 		
-		Uses retrieve_timeseries() from utilities_PCAT.py
+		Uses retrieve_timeseries() from `pcat.utils`
 		
 	2) Condition data 
 		a conditioning_function() is defined based on the required
 		processing, and data is prepared for analysis by calling
 		conditioning_function().
-		Uses various functions from data_conditioning.py
+		Uses various functions from `pcat.condition`
 		
 		Data conditioning and retriveval is sped up by launching multiple
 		processes, defined by the PARALLEL_PROCESSES variable (see below).
@@ -29,22 +29,22 @@ PCAT Pipeline:
 		Create a database from the previously processed data.
 		
 		Uses create_data_matrix(...), create_data_matrix_from_psd(...)
-		from utilities_PCAT.py.
+		from `pcat.utils`.
 		
 	4) Perform PCA
 		Perform PCA on the database
-		PCA(...) from PCA.py
+		PCA(...) from `pcat.pca`
 		
-	5) Cluster the scores matrix from PCA.py
-		gaussian_mixture(...) from GMM.py
+	5) Cluster the scores matrix from `pcat.pca`
+		gaussian_mixture(...) from `pcat.gmm`
 		
 		Other clustering algorithms can be easily implemented
 		by changing gaussian_mixture() with another function.
-		For more see GMM.py
+		For more see `pcat.gmm`
 	
 	6) Plot scatterplots (with image maps), time series
 		scatterplot(...), spike_time_series(...), plot_psds(...)
-		from GMM.py
+		from `pcat.gmm`
 	
 	7) Print URL to analysis results.
 		
@@ -111,15 +111,15 @@ max_clusters = 10
 
 from glob import glob
 
-from utilities_PCAT import *
+from pcat.utils import *
 
-from download_frames import retrieve_timeseries
-from data_conditioning import *
+from pcat.data import retrieve_timeseries
+from pcat.condition import *
 
-from finder import find_spikes
-from PCA import PCA, create_data_matrix, eigensystem, matrix_whiten
-from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
-from GMM import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
+from pcat.finder import find_spikes
+from pcat.pca import PCA, create_data_matrix, eigensystem, matrix_whiten
+from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
+from pcat.gmm import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
 def usage():
 	'''
@@ -549,7 +549,7 @@ def check_options_and_args(argv):
 	
 	# Retrieve sampling frequency for the given channel by retrieving a small 
 	# portion of the data. Sampling frequency is accessed through the 'fs' key
-	# of the 'data' dictionary (see download_frames.py for the definition
+	# of the 'data' dictionary (see `pcat.data` for the definition
 	# of retrieve_timeseries)
 	start = times[0][0]
 	try:
@@ -996,7 +996,7 @@ def pipeline(args):
 	
 	# The files returned by retrieve_timeseries are python dictionaries 
 	# containing the time series with keys 'waveform', 'dt', and 'fs'
-	# (see download_frames.py)
+	# (see `pcat.data`)
 	
 	if ( "time" in ANALYSIS ):
 		# Define band-pass or whitening filter)
@@ -1036,7 +1036,7 @@ def pipeline(args):
 	# Define the worker function, depending on the type of analyis
 	# which was requested.
 	# The worker function is called through parmap() (defined in 
-	# utilities_PCAT.py) to speed up computation time using multiple processes.
+	# `pcat.utils`) to speed up computation time using multiple processes.
 	# - If doing a time domain analysis, the time series is analyzed as soon as
 	#   it is retrieved from the frame files. The found transients are stored
 	#   as Spike() objects in a python list.
@@ -1248,7 +1248,7 @@ def pipeline(args):
 	# Call workfunction() on segment's elements, parallelizing using 
 	# PARALLEL_PROCESSES processes (this number is defined at the top of this 
 	# file).
-	# parmap() is defined in utilities_PCAT.py and uses the multiprocessing
+	# parmap() is defined in `pcat.utils` and uses the multiprocessing
 	# module.
 	if not SILENT:
 		global progress, progress_index

@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 
 from scipy.signal import cheby1, firwin, lfilter, resample
 
-from spike_class import *
+from .spike import *
 
 """def get_terminal_size():
 	'''

@@ -4,7 +4,7 @@
 # brethil@phy.olemiss.edu
 '''
 This program is used to perform PCA and cluster in the principal component
-space data from finder.py
+space data from `pcat.finder`
 
 It's important to note that, even if this is written to use GMM, with a few
 changes, every clustering algorithm (currently 'gaussian_mixture()')
@@ -39,8 +39,8 @@ SMALL_COMPONENTS = 50
 
 import warnings
 
-from utilities_PCAT import *
-from PCA import standardize, eigensystem, PCA, load_data, matrix_whiten
+from .utils import *
+from .pca import standardize, eigensystem, PCA, load_data, matrix_whiten
 import matplotlib.mlab
 from matplotlib.image import NonUniformImage
 
