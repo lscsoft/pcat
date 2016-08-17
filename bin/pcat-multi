@@ -25,7 +25,7 @@ import subprocess
 
 
 import numpy as np
-import PCAT
+import pcat
 
 from string import join
 
