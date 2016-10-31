@@ -9,7 +9,7 @@
 # and a PCAT configuration file and runs PCAT on the given GPS times/config
 #
 # Usage:
-#   PCAT_configread.py GPS_list config_file_time [conf_file_freq]
+#   pcat-multi GPS_list config_file_time [conf_file_freq]
 #
 # If the frequency configuration file is omitted only the time_domain analysis 
 # is run.
@@ -23,12 +23,11 @@ import os
 import shutil
 import subprocess
 
-
 import numpy as np
-import pcat
+import pipeline as pipe
+import utils
 
 from string import join
-
 
 IMAGE_WIDTH = 1500
 DPI = 80
@@ -42,14 +41,14 @@ def parse_commandline():
     Parse the options given on the command-line.
     """
     parser = optparse.OptionParser()
-    default_time_config = "/home/brethil/cron_PCAT/PCAT_cron-time.config"
-    default_frequency_config = "" #"/home/brethil/cron_PCAT/PCAT_cron-frequency.config"
+    default_time_config = "PCAT_time.config"
+    default_frequency_config = "PCAT_frequency.config"
     #TODO: ADD A WARNING IF FILE DOES NOT EXIST AND FALLBACK TO THE DEFAULT
     parser.add_option("-l", "--list", help="List file containing tab separated GPS times",default=None)
     parser.add_option("-s", "--start", help="GPS time start",default=None)
     parser.add_option("-e","--end", help="GPS time end", default=None)
-    parser.add_option("-t", "--time", help="Time Domain configuration file, optional, defaults to " + default_time_config, default=default_time_config)
-    parser.add_option("-f", "--frequency", help="Frequency Domain configuration file, optional, defaults to " + default_frequency_config, default=default_frequency_config)
+    parser.add_option("-t", "--time", help="Time Domain configuration file, optional, defaults to " + default_time_config, default=None)
+    parser.add_option("-f", "--frequency", help="Frequency Domain configuration file, optional, defaults to " + default_frequency_config, default=None)
     parser.add_option("-n", "--name", help="Name for output file (if using -s and -e)", default=None)
     parser.add_option("--IFO", help="Interferometer to use, 'H' for Hanford, 'L' for Livingston.", default=None)
     opts, args = parser.parse_args()
@@ -91,7 +90,7 @@ def read_config_time(file_name):
         max_clusters.append(configuration[10])
         
     configuration = (channel_names, IFOs, frame_types, thresholds, variables_number, highpass_cutoff, whitening, downsample_freq, segment_size, components_number, max_clusters)
-    
+
     return configuration
 
 def read_config_frequency(file_name):
@@ -135,23 +134,31 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
     args = []
     for index in range(len(channel_names)):
         # Example of typical args:
-        # "PCAT.py --time --whiten --highpasscutoff 10 -t 4.0 --IFO L --frame
+        # "pcat --time --whiten --highpasscutoff 10 -t 4.0 --IFO L --frame
         #   L1_R -c L1:LSC-DARM_IN1_DQ --list summary_24-July-2014
         #   --reconstruct --components 10 -m 6"
         
-        whiten = '--whiten' if (whitening[index] == "YES") else ''
-        if opts.start and opts.end:
-            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
-        else:
-            arg = "PCAT.py --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
-        args.append(arg.split())
+#        whiten = '--whiten' if (whitening[index] == "YES") else ''
+#        if opts.start and opts.end:
+#            arg = "{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13}".format(whitening[index], channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
+#        else:
+#            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
+#        args.append(arg.split())
+     whiten = '--whiten' if (whitening[index] == "YES") else ''
+     if opts.start and opts.end:
+            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
+     else:
+            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
+     args.append(arg.split())
+
+
     errors = 0
     # Results is a dict, its keys are the channel name, its values the URLs to results
     results = {}
     for index, configuration in enumerate(args):
-        print "Processing {0}...".format(channel_names[index])
+        #print "Processing {0}...".format(channel_names[index])
         try:
-            URL = PCAT.pipeline(configuration)
+            URL = pipe.pipeline(configuration)
         except:
             import traceback
             error = traceback.format_exc()
@@ -172,7 +179,7 @@ def run_PCAT_frequency(list_name, configuration):
     args = []
     for index in range(len(channel_names)):
         # Example of typical args:
-        # PCAT.py --frequency --size 10 --IFO L --frame L1_R
+        # pcat --frequency --size 10 --IFO L --frame L1_R
         # -c L1:LSC-DARM_OUT_DQ --start 1090221815 --end 1090222285
         # --list list_name -m 10 --components 40 -v 8192
         
@@ -184,7 +191,7 @@ def run_PCAT_frequency(list_name, configuration):
     for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
-            URL = PCAT.pipeline(configuration)
+            URL = pipe.pipeline(configuration)
         except:
             import traceback
             error = traceback.format_exc()
@@ -201,18 +208,7 @@ def run_PCAT_frequency(list_name, configuration):
 
 def print_html_table(list_path, output_dir, base_URL, results_time=None, results_frequency=None):
     global channel_processing_errors
-    try:
-        os.makedirs( output_dir )
-    except:
-        pass
-    try:
-        os.makedirs( output_dir + "/img")    
-    except:
-        pass
-    try:
-        os.makedirs( output_dir + "/misc")    
-    except:
-        pass
+
     list_name = os.path.basename(list_path)
     output_file = open(output_dir + "/" + list_name + ".html", "w")
     
@@ -224,7 +220,7 @@ def print_html_table(list_path, output_dir, base_URL, results_time=None, results
         analyzed_interval = results_time[results_time.keys()[0]]+ "Analyzed_interval.txt"
     except:
         analyzed_interval = results_frequency[results_frequency.keys()[0]]+ "Analyzed_interval.txt"
-    
+
     print >>output_file, """<html>
     <head>
         <title>PCAT Summary - {0}</title>
@@ -301,6 +297,7 @@ order="1" cellpadding="2" cellspacing="2" align=center><col width=250> <col widt
     
     
     # Final touch: add configuration files, original command, error list, then close html file tags
+
     config_time = "{0}/misc/config_{1}_time.txt".format(base_URL, list_name)
     config_frequency = "{0}/misc/config_{1}_frequency.txt".format(base_URL, list_name)
     
@@ -346,6 +343,7 @@ def locked_times_plot(list_path, out_path, start_time, end_time):
         end_time: GPS time where the lock plot should end
     """
     import matplotlib
+    matplotlib.use('agg')
     import matplotlib.pyplot as plt
     import numpy as np
     f = open(list_path, "r")
@@ -426,18 +424,17 @@ def main():
     original_command = join(sys.argv, " ")
     channel_processing_errors = ""
     user_name = os.path.expanduser("~").split("/")[-1]
-    output_dir = os.path.expanduser("/home/"+user_name+"/public_html/PCAT_cron")
+    output_dir = os.path.expanduser("/home/"+user_name+"/public_html/pcat-multi/")
     
     # Define base URLs
-    server = PCAT.get_server_url()
-    base_URL = "{0}~{1}/PCAT_cron".format(server, user_name)
+    server = utils.get_server_url()
+    base_URL = "{0}~{1}/pcat-multi".format(server, user_name)
     
-    
-    try:
-        os.makedirs(output_dir)
-    except:
+    if os.path.isdir(output_dir):
         pass
-    
+    else:
+        os.makedirs(output_dir)
+
     if (not opts.list) and (not ( opts.start and opts.end)):
         print "Either a list of times or start and end GPS times have to be supplied."
         print "Re-run with -h for usage."
@@ -447,7 +444,7 @@ def main():
         exit()
     
     # Call ligo-proxy-init to initialize the grid certificate
-    subprocess.call(["ligo-proxy-init {0}".format(user_name)])
+#    subprocess.call(["ligo-proxy-init {0}".format(user_name)])
     
     # Set an output name if name has not been provided
     if opts.start and not opts.name:
@@ -493,7 +490,7 @@ def main():
         counter = 0 
         if (len(locked_times) > 0):
             for segment in locked_times:
-                # Add one second at the start and remove one second at the end of
+                # Add ten seconds at the start and remove ten seconds at the end of
                 # each segment to avoid pre-lock-loss transients
                 # Segment is counted as valid only if longer than 60 seconds
                 if ( (segment[1]-10) - (segment[0]+10)) > 60:
@@ -524,6 +521,12 @@ def main():
       
     
     configuration_file_time = os.path.abspath(opts.time)
+
+    if os.path.isdir(output_dir + "/misc"):
+        pass
+    else:
+	os.makedirs(output_dir + "/misc")
+
     shutil.copyfile(configuration_file_time, output_dir + "/misc/config_" + os.path.basename(times_list) + "_time.txt")
     configuration_time = read_config_time(configuration_file_time)
     
@@ -533,6 +536,12 @@ def main():
         shutil.copyfile(configuration_file_frequency, output_dir + "/misc/config_" + os.path.basename(times_list) + "_frequency.txt")
         
     # Write lock_plot
+
+    if os.path.isdir(output_dir + "/img"):
+        pass
+    else:
+	os.makedirs(output_dir + "/img")
+
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
 	
     # Run time domain analysis
@@ -559,3 +568,5 @@ def main():
     
 if __name__ == '__main__':
     main()
+
+
