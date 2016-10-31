@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-
 # uncomment for 3D plots
 #from mpl_toolkits.mplot3d import axes3d
 
@@ -192,9 +191,8 @@ def matrix_whiten(data_matrix, std=False):
 	
 	if not std:
 		stds = np.ones(len(means))
-		
-	return data_matrix, means, stds
 
+        return data_matrix, means, stds
 
 def eigensystem(matrix):
 	"""
@@ -206,9 +204,10 @@ def eigensystem(matrix):
 	
 	"""
 	
-	# Verified 05/11/2013
-	
-	eigenvalues, eigenvectors = np.linalg.eigh( matrix )
+	# Verified 05/11/2013 - Changed buggy np.linalg.eigh in np.linalg.eigh by Marco 08/17/2016 
+	import scipy
+	eigenvalues, eigenvectors = scipy.linalg.eigh( matrix )
+#	eigenvalues, eigenvectors = np.linalg.eigh( matrix )
 	# Sort eigenvalues by order of decreasing absolute value
 	idx = np.abs(eigenvalues).argsort()
 	eigenvalues = eigenvalues[idx[::-1]]
@@ -252,9 +251,9 @@ def PCA(matrix, components_number=50, variance=None):
 	# output matrix has columns with zero means (if std=True then it has also
 	# unit variance in the columns)
 	matrix, means, stds = matrix_whiten(matrix, std=STANDARDIZE_COLUMNS)
-	
 	covariance_matrix = np.cov( matrix.transpose() )
 	eigenvalues, principal_components = eigensystem( covariance_matrix )
+
 	if variance:
 		if (variance !=0) and (variance <= 1):
 			explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))

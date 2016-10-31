@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-utilities_PCAT.py
+utils.py
 
 Contains various PCAT definitions and functions.
 
@@ -29,14 +29,14 @@ import numpy as np
 import cPickle as pickle
 
 import matplotlib
-import matplotlib.colors
 matplotlib.use('agg')
+import matplotlib.colors
 import matplotlib.pyplot as plt
 
 
 from scipy.signal import cheby1, firwin, lfilter, resample
 
-from .spike import *
+from spike import *
 
 """def get_terminal_size():
 	'''
