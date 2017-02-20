@@ -4,7 +4,7 @@
 Daniele Trifiro`
 brethil@phy.olemiss.edu
 
-download_frames.py is used do retrieve time series from frame files (.gwf).
+`pcat.data` is used do retrieve time series from frame files (.gwf).
 pyl
 Can be used standalone. For usage: run with -h.
 
@@ -19,9 +19,11 @@ import sys
 
 import getopt
 
+import numpy as np
 import pylal.frutils
+import numpy as np
 
-from utilities_PCAT import progressBar
+from pcat.utils import progressBar
 
 def usage():
 	print "Usage:\n\tdownload_data.py -s start_time -e end_time -c channel -I IFO -f frame_type "

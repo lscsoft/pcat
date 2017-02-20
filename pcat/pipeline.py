@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# encoding: utf-8
-""" PCAT.py
+# coding: utf-8
+""" pipeline.py
 
 First version by Daniele Trifirò on 2013-08-17.
 brethil@phy.olemiss.edu
@@ -14,13 +14,13 @@ PCAT Pipeline:
 		Read from the frame files (and save if requested) time series
 		for the given time interval.
 		
-		Uses retrieve_timeseries() from utilities_PCAT.py
+		Uses retrieve_timeseries() from `pcat.utils`
 		
 	2) Condition data 
 		a conditioning_function() is defined based on the required
 		processing, and data is prepared for analysis by calling
 		conditioning_function().
-		Uses various functions from data_conditioning.py
+		Uses various functions from `pcat.condition`
 		
 		Data conditioning and retriveval is sped up by launching multiple
 		processes, defined by the PARALLEL_PROCESSES variable (see below).
@@ -29,33 +29,34 @@ PCAT Pipeline:
 		Create a database from the previously processed data.
 		
 		Uses create_data_matrix(...), create_data_matrix_from_psd(...)
-		from utilities_PCAT.py.
+		from `pcat.utils`.
 		
 	4) Perform PCA
 		Perform PCA on the database
-		PCA(...) from PCA.py
+		PCA(...) from `pcat.pca`
 		
-	5) Cluster the scores matrix from PCA.py
-		gaussian_mixture(...) from GMM.py
+	5) Cluster the scores matrix from `pcat.pca`
+		gaussian_mixture(...) from `pcat.gmm`
 		
 		Other clustering algorithms can be easily implemented
 		by changing gaussian_mixture() with another function.
-		For more see GMM.py
+		For more see `pcat.gmm`
 	
 	6) Plot scatterplots (with image maps), time series
 		scatterplot(...), spike_time_series(...), plot_psds(...)
-		from GMM.py
+		from `pcat.gmm`
 	
 	7) Print URL to analysis results.
 		
 """
 
 import sys
+
 from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 12
+PARALLEL_PROCESSES = 4
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -111,21 +112,21 @@ max_clusters = 10
 
 from glob import glob
 
-from utilities_PCAT import *
+from pcat.utils import *
 
-from download_frames import retrieve_timeseries
-from data_conditioning import *
+from pcat.data import retrieve_timeseries
+from pcat.condition import *
 
-from finder import find_spikes
-from PCA import PCA, create_data_matrix, eigensystem, matrix_whiten
-from GMM import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
-from GMM import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
+from pcat.finder import find_spikes
+from pcat.pca import PCA, create_data_matrix, eigensystem, matrix_whiten
+from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
+from pcat.gmm import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
 def usage():
 	'''
 		Usage
 	'''
-	"""print "Usage:\n\tPCAT.py (--time || --frequency) (--start start_time --end end_time || --list times_list)\n\
+	"""print "Usage:\n\tpcat (--time || --frequency) (--start start_time --end end_time || --list times_list)\n\
 	 --frame frame_type -I IFO -c channel_name [--size segment_size]  \n\
 	 [--filter] [--low low_frequency --high high_frequency]\n\
 	 [--energy] [--whiten] [--nohighpass] [-v variables_number]\n\
@@ -133,7 +134,7 @@ def usage():
 	 [--save_timeseries] [--reconstruct]"
 	"""
 	print '\033[1m' + "Usage:" + '\033[0m'
-	print "\tPCAT.py --IFO IFO --frame frame -c channel\\"
+	print "\tpcat --IFO IFO --frame frame -c channel\\"
 	print "--start start_time --end_end_time OR --list list_of_times\\"
 	
 	print "\t" + '\033[1m'+ "Time Domain options:" + '\033[0m'
@@ -325,7 +326,7 @@ def check_options_and_args(argv):
 	
 	global ANALYSIS, ANALYSIS_FREQUENCY, CLEAN, RECONSTRUCT, NOPLOT, SILENT
 	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
-	
+
 	LIST = False
 	CUSTOM_OUT = False
 	FILTER = False
@@ -549,7 +550,7 @@ def check_options_and_args(argv):
 	
 	# Retrieve sampling frequency for the given channel by retrieving a small 
 	# portion of the data. Sampling frequency is accessed through the 'fs' key
-	# of the 'data' dictionary (see download_frames.py for the definition
+	# of the 'data' dictionary (see `pcat.data` for the definition
 	# of retrieve_timeseries)
 	start = times[0][0]
 	try:
@@ -706,7 +707,9 @@ def print_parameters():
 			else:
 				pass
 		else:
-			print "\t\t Whitening:\t\t\tOFF\n"
+			print "\t\t Whitening:\t\t\tOFF"
+			if HIGH_PASS:
+				print "\t\t High Pass Cutoff:\t\t\n", HIGH_PASS_CUTOFF
 		print "\t - Trigger parameters:\n\
 		 Number of variables:\t\t", variables
 		if ( sampling > ANALYSIS_FREQUENCY ):
@@ -818,7 +821,9 @@ def pipeline(args):
 	# Set up time series download directory (if requested)
 	if SAVE_TIMESERIES:
 		download_directory = processing_directory + "raw/"
-	
+        else:
+                download_directory = processing_directory + "raw/"	
+
 	# Set up log file for error output and/or debug
 	global log_name 
 	log_name = processing_directory + "Analysis-{0}".format(ANALYSIS)
@@ -831,6 +836,8 @@ def pipeline(args):
 				log_name += "_highpassed_" + str(HIGH_PASS_CUTOFF)
 		elif FILTER:
 			log_name += "_filter_%i-%i" % (low, high)
+		elif HIGH_PASS:
+			log_name += "_highpassed_" + str(HIGH_PASS_CUTOFF)
 	else:
 		global resolution
 		resolution = sampling/(2*(variables-1))
@@ -867,6 +874,9 @@ def pipeline(args):
 			OUTPUT += "whitened_"
 			if HIGH_PASS:
 				OUTPUT += "highpassed_{0}_".format(HIGH_PASS_CUTOFF)
+		elif HIGH_PASS:
+			OUTPUT += "highpassed_{0}_".format(HIGH_PASS_CUTOFF)
+		
 		OUTPUT += "{0}_".format(normalization)
 		OUTPUT += "t-{0}_w-{1}/".format(threshold, variables)
 	elif ( "frequency" in ANALYSIS ):
@@ -901,6 +911,12 @@ def pipeline(args):
 	
 	# Create output folders
 	output_dir = os.path.expanduser("~/public_html/" + OUTPUT)
+
+#        if os.path.isdir(output_dir):
+#            pass
+#        else:
+#            os.makedirs(output_dir)
+
 	try:
 		os.makedirs( output_dir )
 	except:
@@ -943,10 +959,22 @@ def pipeline(args):
 
 	
 	# Create working folders (if not already present)
+
+#        if os.path.isdir(processing_directory):
+#            pass
+#        else:
+#            os.makedirs(processing_directory)
+
 	try:
 		os.makedirs( processing_directory )
 	except:
 		pass
+
+#        if os.path.isdir(download_directory):
+#            pass
+#        else:
+#            os.makedirs(download_directory)
+
 	try:
 		os.makedirs( download_directory )
 	except:
@@ -989,7 +1017,7 @@ def pipeline(args):
 	
 	# The files returned by retrieve_timeseries are python dictionaries 
 	# containing the time series with keys 'waveform', 'dt', and 'fs'
-	# (see download_frames.py)
+	# (see `pcat.data`)
 	
 	if ( "time" in ANALYSIS ):
 		# Define band-pass or whitening filter)
@@ -1005,6 +1033,9 @@ def pipeline(args):
 			conditioning_function = lambda x: whiten(x['waveform'], download_overlap_seconds, f_sampl=x['fs'], resample_freq=ANALYSIS_FREQUENCY, \
 									highpass=HIGH_PASS, highpass_cutoff=HIGH_PASS_CUTOFF,\
 									resample=RESAMPLE)
+		elif HIGH_PASS:
+			conditioned_folder = "high_passed_%1.f/" % HIGH_PASS_CUTOFF
+			conditioning_function = lambda x: high_pass_filter(x['waveform'], HIGH_PASS_CUTOFF, x['fs'], 4)
 		else:
 			# If no kind of processing is required return the unprocessed time
 			# series.
@@ -1018,6 +1049,12 @@ def pipeline(args):
 			global resolution
 			freqs, PSD = compute_psd(x['waveform'], resolution=resolution, f_sampl=x['fs'], overlap=psd_overlap)
 			return PSD
+
+#        if os.path.isdir(processing_directory + conditioned_folder):
+#            pass
+#        else:
+#            os.makedirs(processing_directory + conditioned_folder)
+
 	try:
 		os.makedirs( processing_directory + conditioned_folder )
 	except:
@@ -1026,7 +1063,7 @@ def pipeline(args):
 	# Define the worker function, depending on the type of analyis
 	# which was requested.
 	# The worker function is called through parmap() (defined in 
-	# utilities_PCAT.py) to speed up computation time using multiple processes.
+	# `pcat.utils`) to speed up computation time using multiple processes.
 	# - If doing a time domain analysis, the time series is analyzed as soon as
 	#   it is retrieved from the frame files. The found transients are stored
 	#   as Spike() objects in a python list.
@@ -1221,12 +1258,21 @@ def pipeline(args):
 	
 	# Create directories for conditioned files
 	os.chdir(processing_directory)
+
+#        if os.path.isdir(download_directory + processing_directory + channel):
+#            pass
+#        else:
+#            os.makedirs(download_directory + processing_directory + channel)
+#	    if SAVE_TIMESERIES:
+#                os.makedirs(download_directory + processing_directory + channel + "/" + conditioned_folder)
+
 	try:
-		os.makedirs(folder + processing_directory + channel)
+		os.makedirs(download_directory + processing_directory + channel)
 		if SAVE_TIMESERIES:
 			os.makedirs(download_directory + processing_directory + channel + "/" + conditioned_folder)
 	except:
 		pass
+
 	try:
 		os.chdir(processing_directory)
 	except:
@@ -1238,7 +1284,7 @@ def pipeline(args):
 	# Call workfunction() on segment's elements, parallelizing using 
 	# PARALLEL_PROCESSES processes (this number is defined at the top of this 
 	# file).
-	# parmap() is defined in utilities_PCAT.py and uses the multiprocessing
+	# parmap() is defined in `pcat.utils` and uses the multiprocessing
 	# module.
 	if not SILENT:
 		global progress, progress_index
@@ -1383,10 +1429,12 @@ def pipeline(args):
 	# stds should be a numpy array of ones, unless matrix_whiten(..., std=True)
 	# in PCA()
 	global components_number
+
 	if AUTOCHOOSE_COMPONENTS:
 		score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number, variance=VARIANCE_PERCENTAGE )
 	else:
 		score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number)
+
 	# Save pickled Principal Components 
 	f = open("Principal_components.dat", "wb")
 	pickle.dump(principal_components, f)
@@ -1394,7 +1442,6 @@ def pipeline(args):
 	print "\tSaved 'Principal_components.dat'"
 	
 	explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
-	
 	
 	# If automatically chosing components update parameters dump to include
 	# number of PCs used when clustering	
@@ -1415,7 +1462,7 @@ def pipeline(args):
 	# Only use the first 'components_number' components, and standardize input 
 	# data (set zero mean and unit variance) using matrix_whiten to improve
 	# clustering.
-	
+
 	reduced_whitened_scores, tmp_means, tmp_stds = matrix_whiten(score_matrix[:, :components_number], std=True)
 	labels = gaussian_mixture(reduced_whitened_scores, upper_bound=max_clusters, SILENT=SILENT)
 	
@@ -1468,7 +1515,7 @@ def pipeline(args):
 					axs.append( fig.add_subplot(triangle_components, triangle_components, n) )
 					warnings.filterwarnings( "ignore", category=UserWarning )
 					axs[-1].set_title("Principal component {0} scores distribution".format(x))
-					axs[-1].hist(score_matrix[:,x-1], bins=np.sqrt(observations), log=True, histtype="stepfilled", alpha=0.8)
+					axs[-1].hist(score_matrix[:,x-1], bins=min(100,int(np.sqrt(observations))), log=True, histtype="stepfilled", alpha=0.8)
 				else:
 					# Share axis with the plot above the current
 					if (n > triangle_components):
@@ -1637,7 +1684,7 @@ def pipeline(args):
 	return results_URL
 
 def main():
-	pipeline(sys.argv)
+        pipeline(sys.argv)
 	
-if __name__ == "__main__":
-	main()
+#if __name__ == "__main__":
+#	main()

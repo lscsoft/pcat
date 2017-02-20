@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-utilities_PCAT.py
+utils.py
 
 Contains various PCAT definitions and functions.
 
@@ -29,14 +29,14 @@ import numpy as np
 import cPickle as pickle
 
 import matplotlib
-import matplotlib.colors
 matplotlib.use('agg')
+import matplotlib.colors
 import matplotlib.pyplot as plt
 
 
 from scipy.signal import cheby1, firwin, lfilter, resample
 
-from spike_class import *
+from spike import *
 
 """def get_terminal_size():
 	'''
@@ -441,6 +441,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		(PSD, freqs) =  spike.psd, spike.fft_freq
 	
 		central_freq = (np.sum(PSD*freqs))/PSD.sum()
+		# Peak frequency is the frequency at which the PSD has a maximum (bad choice for parameter name)
 		peak_frequency = freqs[np.argmax(PSD)]
 		spike.peak_frequency = peak_frequency
 		spike.central_freq = central_freq
@@ -457,7 +458,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	x_ticks = [start_time]
 	x_ticks_labels = ["0"]
 	interval = end_time-start_time
-	step = (interval)//15
+	step = max((interval)//15, 1)
 	
 	range_end = end_time
 	for i in range(start_time+step, range_end-step, step):
@@ -549,7 +550,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	sizes += 3
 	
 	# Plot the scatterplot for the first panel and colorbar
-	cax = ax.scatter(time_axis, peak_frequencies, c=SNRs, s=sizes, norm=matplotlib.colors.LogNorm(), cmap=matplotlib.cm.jet)
+	cax = ax.scatter(time_axis, peak_frequencies, c=SNRs, s=sizes, norm=matplotlib.colors.LogNorm(), cmap=matplotlib.cm.jet, edgecolor="none")
 	cbar = plt.colorbar(cax, ax=ax, orientation="vertical", shrink=0.7, fraction=0.05, pad=0.01, spacing="proportional")
 
 	# Fix colorbar labels

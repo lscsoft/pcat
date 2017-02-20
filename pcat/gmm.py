@@ -4,7 +4,7 @@
 # brethil@phy.olemiss.edu
 '''
 This program is used to perform PCA and cluster in the principal component
-space data from finder.py
+space data from `pcat.finder`
 
 It's important to note that, even if this is written to use GMM, with a few
 changes, every clustering algorithm (currently 'gaussian_mixture()')
@@ -39,13 +39,16 @@ SMALL_COMPONENTS = 50
 
 import warnings
 
-from utilities_PCAT import *
-from PCA import standardize, eigensystem, PCA, load_data, matrix_whiten
+from .utils import *
+from .pca import standardize, eigensystem, PCA, load_data, matrix_whiten
 import matplotlib.mlab
 from matplotlib.image import NonUniformImage
 
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore",category=DeprecationWarning)
+    import sklearn.mixture as mix
 
-import sklearn.mixture as mix
+#import sklearn.mixture as mix
 
 # mplot3d is used for the 3D plots.
 #from mpl_toolkits.mplot3d import axes3d
@@ -758,7 +761,7 @@ def print_lists(database, labels, cluster_number, ANALYSIS):
 		elif ( 'time' in ANALYSIS ):
 			for j_index, observation in enumerate(database):
 				if ( labels[j_index] == index ):
-					f.write( str(observation.peak_GPS)+"\n")
+					f.write( "{0:.6f}".format(observation.peak_GPS)+"\n")
 		f.close()
 		#print "\tSaved: "+OUTPUT+"."
 
@@ -932,7 +935,7 @@ def spike_time_series(database, PCA_info, components_number, labels, f_sampl, RE
 		
 		fig.savefig( "time_series/Type_%i/%.3f.pdf" % (labels[index]+1, spike.peak_GPS), bbox_inches='tight', pad_inches=0.2)
 		plt.close(fig)
-		del ax, ax1, fig
+		
 		
 		if not SILENT:
 			if ( spikes_number > 1 ):
@@ -1484,7 +1487,8 @@ def main():
 	print "Clustering using the first %i principal components..." % principal_components_number
 	reduced_score_matrix = score_matrix[:,:principal_components_number]
 	
-	mat, tmp, tmp1 = matrix_whiten(reduced_score_matrix, std=True)
+	mat, tmp, tmp1 = matrix_whiten(reduced_score_matrix, std=False)   ####%%% Changed to False by MC
+
 	labels = gaussian_mixture(mat, upper_bound=max_clusters)
 	
 	cluster_number = len( np.unique(labels) )
@@ -1574,3 +1578,4 @@ if __name__ == "__main__":
 	main()
 	endtime = float(time.time()-start)
 	print "Total Execution: {0:.1f} s".format(endtime if endtime > 0 else endtime/60.0 )
+

@@ -17,9 +17,9 @@ Can be used standalone. For usage: run with -h.
 
 from numpy import linalg
 
-from utilities_PCAT import *
+from pcat.utils import *
 
-from data_conditioning import median_mean_average_psd
+from pcat.condition import median_mean_average_psd
 
 def usage():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
@@ -28,7 +28,7 @@ def usage():
 		[-o FILE, --output file] file1 file2 file3 ..."
 	
 	print "\n\tTakes data in pickled or plain text files (file1, file2, ...).\n\
-	Returns a pickled (or plain text) list of Spike() class objects (see spike_class.py)\n\
+	Returns a pickled (or plain text) list of Spike() class objects (see `pcat.spike`)\n\
 	containing transients and their properties, e.g., GPS peak time, peak absolute value."
 	
 	print "\n\tOptions:"
@@ -317,7 +317,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	last_spike_index = 0		# Last spike index is the last index of the 
 								# spike above threshold
 	max_spike_index = 0
-	max__spike_value = 0
+	max_spike_value = 0
 	HAS_SPIKE = False
 	
 	( start, end ) = (data_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
@@ -335,6 +335,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 	
 	delta_t = 1.0/f_sampl
 	
+	segment_length = len(to_analyze)
 	for index, point in enumerate(to_analyze):
 		if (abs(point) > threshold):
 			if not HAS_SPIKE:
@@ -348,7 +349,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			last_spike_index = index
 		
-		elif (index-max_spike_index > time_resolution) and HAS_SPIKE:
+		elif (index-max_spike_index > time_resolution ) and HAS_SPIKE:
 			# We're now outside the search range for the spike: save the 
 			# current spike and start over.
 						
@@ -388,7 +389,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			
 			# We don't need the factor of 4 in front of the integral because both spike.psd and psd
 			# are one-sided and are correctly normalized
-			spike.SNR = np.sqrt( (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
+			spike.SNR = np.sqrt( 4* (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
 			
 			# Check spike polarity
 			if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
@@ -403,7 +404,49 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 			HAS_SPIKE = False
 			max_spike_value = 0
 			max_spike_index = 0
-			
+	
+	if HAS_SPIKE:
+		# Save waveform
+		waveform = data[max_spike_index+removed_points-spike_width/2:max_spike_index+removed_points+spike_width/2] 
+		# Instantiate Spike object
+		first_index, last_index = first_spike_index+removed_points, last_spike_index+removed_points
+		max_index = max_spike_index+removed_points
+		peak_GPS = (int(start)+ ( max_index / f_sampl ))
+		spike = Spike(first_index, last_index,
+						max_index, max_spike_value,
+						peak_GPS, int(start), int(end),
+						waveform, f_sampl)
+		
+		# The squared SNR per unit frequency for a signal g(t) is defined as
+		#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
+		# Factor of two beause the numerator should be g(f)*g_conj(f) + g_conj(f)*g(f)
+		# where g(f) is the Fourier transform of g(t) and Pxx is the 
+		# detector spectrum.
+		# Thus the total SNR:
+		#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
+		# Since g(f) is symmetric around f  (time series is real)/
+		
+		# Factor of two in psd because rfft is one sided.
+		spike.psd = 2 * 1.0/window_norm * 1.0 *  np.abs(delta_t*np.fft.rfft(spike.waveform*window, n=int(f_sampl)))**2
+		spike.psd[0] /= 2.0
+		spike.fft_freq = freqs
+		
+		spike.segment_psd = psd
+		
+		# We don't need the factor of 4 in front of the integral because both spike.psd and psd
+		# are one-sided and are correctly normalized
+		spike.SNR = np.sqrt( (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
+		
+		# Check spike polarity
+		if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
+			spike.polarity = 1
+		else:
+			spike.waveform *= -1
+			spike.polarity = -1
+		
+		# Save Spike object
+		spikes.append(spike)
+	
 	return spikes
 
 def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed_seconds, f_sampl, normalization=None):

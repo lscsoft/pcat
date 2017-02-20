@@ -36,9 +36,9 @@ The Spike class is used to store the information about a spike, such as amplitud
 		spike.sampling		->	Sampling frequency for the original data
 	
 	
-	To get a list of all the defined attributes:
+	To get a list of all the defined attributes of an istance "t":
 	import inspect
-	variables = [i for i in dir(t) if not inspect.ismethod(i)
+	variables = [i for i in dir(t) if not inspect.ismethod(i)]
 	
 '''
 
