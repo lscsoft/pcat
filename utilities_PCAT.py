@@ -295,7 +295,7 @@ def load_time_series(file_name, pickled=False):
 	return time_series
 
 
-def create_data_matrix(data_list, ANALYSIS, model_waveform=None):
+def create_data_matrix(data_list, ANALYSIS, model_waveform=None, extra_features=False):
 	''' 
 		Takes as input a list of Spike instances and type of analysis being performed:
 		'time', 'frequency', 'time_diff', 'frequency_diff'
@@ -311,7 +311,21 @@ def create_data_matrix(data_list, ANALYSIS, model_waveform=None):
 	waveforms = []
 	for observation in data_list:
 			if ( ANALYSIS == 'time' ):
-				waveforms.append( (observation.waveform)/(observation.norm) )
+				if extra_features:
+					frequencies = observation.fft_freq
+					psd = observation.psd
+					maximum_amplitude_frequency = frequencies[np.argmax(psd)]
+					central_freq = (np.sum(psd*frequencies))/psd.sum()
+					energy = psd.sum()
+					w = observation.waveform
+					std = np.std(w)
+					duration = len(w[w>std]) # UGLY, to be removed
+					extra_features = [maximum_amplitude_frequency, central_freq, energy, duration, observation.polarization]
+					global EXTRA_FEATURES_N
+					EXTRA_FEATURES_N = len(extra_features)
+					data = np.concatenate((extra_features, w/observation.norm))
+				else:
+					waveforms.append( (observation.waveform)/(observation.norm) )
 			elif ( ANALYSIS == 'time_diff' ):
 				waveforms.append( np.abs( model_waveform-( (observation.waveform)/(observation.norm) ) ) )
 			elif ( ANALYSIS == 'frequency' ):
