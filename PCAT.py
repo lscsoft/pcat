@@ -300,6 +300,11 @@ def usage():
 	print "\tThe saved files (binary) can be used with python/numpy,"
 	print "\tusing numpy's 'load()'"
 	
+	print "  --extra_features"
+	print "\tUse extra features (central frequency, peak frequency, Energy, duration)"
+	print "\tto compute PCA."
+    
+    
 	print "   --noplot"
 	print "\tDo not plot transients/PSDs (makes run faster)"
 	
@@ -330,6 +335,9 @@ def check_options_and_args(argv):
 	global ANALYSIS, ANALYSIS_FREQUENCY, CLEAN, RECONSTRUCT, NOPLOT, SILENT
 	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
 	
+	global EXTRA_FEATURES
+	
+	EXTRA_FEATURES = False
 	LIST = False
 	CUSTOM_OUT = False
 	FILTER = False
@@ -466,6 +474,8 @@ def check_options_and_args(argv):
 				print "Usage: --discard_percent percent, 'percent' has to be between 0 and 1"
 				print "Quitting."
 				sys.exit()
+		elif option in ( "--extra_features" ):
+			EXTRA_FEATURES = True
 		else:
 			print "Unknown option."
 			sys.exit()
@@ -1315,13 +1325,6 @@ def pipeline(args):
 		sys.stdout.flush()
 		print " "*(frame_width-3), "\r",
 	
-	
-	"""
-	# Old parallel code, better to avoid using this as it suppresses all
-	# errors when one of its workers fail
-	worker = lambda x: workfunction((conditioning_function, x[0], x[1]))
-	tmp_result = parmap(worker, segments, nprocs=PARALLEL_PROCESSES)
-	"""
 	# Worker function for parallel processing
 	def worker(in_list, out_q):
 		out_arr = []
@@ -1366,16 +1369,6 @@ def pipeline(args):
 		del tmp_result
 	else:
 		results = tmp_result
-	
-
-	"""
-	# The following block is used for sequential (non-parallel) processing
-	results = []
-	for segment in segments:
-		tmp_results.extend(worker(segment))
-	
-	"""
-
 	
 	# Data retrieval and processing is complete.
 	# Output from the pipeline, either a list of Spike
@@ -1425,7 +1418,10 @@ def pipeline(args):
 		# Create data_matrix. PCA will be perfomed on this matrix.
 		if ( ANALYSIS == "time" ):
 			# Create data_matrix
-			data_matrix = create_data_matrix(results, ANALYSIS)
+			if EXTRA_FEATURES:
+				data_matrix = create_data_matrix(results, ANALYSIS, extra_features=EXTRA_FEATURES)
+			else:
+				data_matrix = create_data_matrix(results, ANALYSIS)
 			data_list = results
 		elif ( "frequency" in ANALYSIS ):
 			data_list, data_matrix = create_data_matrix_from_psds(results, ANALYSIS, sampling, low, high)
@@ -1446,8 +1442,11 @@ def pipeline(args):
 		if (RESAMPLE and (sampling > ANALYSIS_FREQUENCY) ) and ("time" in ANALYSIS) :
 			sampling = ANALYSIS_FREQUENCY
  		observations, samples = data_matrix.shape
-		print "\t%ix%i data matrix: %i observations of %i variables." % ( observations, samples, observations, samples )
-		
+		if EXTRA_FEATURES:
+			print "\t{0}x{1} data matrix: {0} observations of {1} variables (time series = {2}).".format( observations, samples, observations-EXTRA_FEATURES)
+		else:
+			print "\t{0}x{1} data matrix: {0} observations of {1} variables.".format( observations, samples)
+			
 		# Get score matrix and principal components, PCA()
 		# Columns means and standard deviations are stored in means
 		# stds should be a numpy array of ones, unless matrix_whiten(..., std=True)
