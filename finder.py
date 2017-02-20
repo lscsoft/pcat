@@ -549,6 +549,8 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 	( start, end ) = (metadata.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
 	
 	triggers = np.loadtxt(trigger_file)
+	assert len(triggers.shape) == 1, "Trigger list should only contain one column of GPS times"
+	
 	# Exit if there are no triggers
 	if len(triggers) == 0:
 		return []
@@ -565,7 +567,7 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 	trigger_differences = np.diff(triggers)
 	# Add 'True' at the beginning of the mask, since len(triggers)=n and len(np.diff(triggers))=n-1
 	# (we are keeping the first trigger)
-	triggers_mask = np.concatenate( ([True], trigger_differences>=(spike_width//2) ) )
+	triggers_mask = np.concatenate( ([True], trigger_differences>=((spike_width//2)/f_sampl ) ) )
 	
 	triggers = triggers[triggers_mask]
 	
