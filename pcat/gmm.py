@@ -4,7 +4,7 @@
 # brethil@phy.olemiss.edu
 '''
 This program is used to perform PCA and cluster in the principal component
-space data from finder.py
+space data from `pcat.finder`
 
 It's important to note that, even if this is written to use GMM, with a few
 changes, every clustering algorithm (currently 'gaussian_mixture()')
@@ -39,13 +39,16 @@ SMALL_COMPONENTS = 50
 
 import warnings
 
-from utilities_PCAT import *
-from PCA import standardize, eigensystem, PCA, load_data, matrix_whiten
+from .utils import *
+from .pca import standardize, eigensystem, PCA, load_data, matrix_whiten
 import matplotlib.mlab
 from matplotlib.image import NonUniformImage
 
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore",category=DeprecationWarning)
+    import sklearn.mixture as mix
 
-import sklearn.mixture as mix
+#import sklearn.mixture as mix
 
 # mplot3d is used for the 3D plots.
 #from mpl_toolkits.mplot3d import axes3d
@@ -469,13 +472,10 @@ def configure_subplot_freq(subplot_number, logy=True):
 
 def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 	""" Compute an median observation for each cluster.
-		The median is used for outlier rejection.
-		
-		For each median observation, perform inverse PCA (multiplying by the transpose of the 
-		principal components matrix and then adding the mean for each observation)
-		
-		After the average types have been computed, these are plotted. 
+		median is used for outlier rejection.
 	"""
+	
+	TIMEDOMAIN = True # If true, waveforms are averaged in the time domain, if false, they are averaged in the frequency domain
 	
 	DPI = 100
 	
@@ -495,18 +495,33 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 		else:
 			glitch_number += len(cluster)
 			for spike in cluster:
-				waveform_clusters[index].append(spike.waveform)
+				if TIMEDOMAIN:
+					waveform_clusters[index].append(spike.waveform)
+				else:
+					waveform_clusters[index].append(np.fft.rfft(spike.waveform))
 		
 	cluster_medians = []
 	for index, cluster in enumerate(waveform_clusters):
 		if index == 0 and no_noise:
-			cluster_medians.append(np.zeros_like(clusters[-1][0].waveform))
+			if TIMEDOMAIN:
+				cluster_medians.append(np.zeros_like(clusters[-1][0].waveform))
+			else:
+				cluster_medians.append(np.zeros_like(np.fft.rfft(clusters[-1][0].waveform)))
 		else:
 			cluster_medians.append(np.median(cluster, axis=0))
 	
+
+	if not TIMEDOMAIN:
+		for index, median in enumerate(cluster_medians):
+			cluster_medians[index] = np.fft.irfft(median)
+			
 	average_observation_matrix = np.array(cluster_medians)
 	
-	observations, waveform_len = np.shape(average_observation_matrix)
+	if EXTRA_FEATURES:
+		observations, waveform_len = np.shape(average_observation_matrix)
+	else:
+		observations, waveform_len = np.shape(average_observation_matrix)
+		waveform_len -= EXTRA_FEATURES_N
 	
 	# Initialize axes for summary plot
 	if ( "frequency" in ANALYSIS ):
@@ -865,7 +880,10 @@ def reconstructed_spike_time_series(database, PCA_info, components_number, label
 			# by dividing them by the norm attribute. To correctly invert
 			# the PCA, one has to multiply by norm.
 			
-			tmp = new_data[index]*spike.norm
+			if EXTRA_FEATURES:
+				tmp = new_data[index][EXTRA_FEATURES_N:]*spike.norm
+			else:
+				tmp = new_data[index]*spike.norm
 			reconstructed.append(tmp)
 			spike.reconstructed = tmp
 			spike.PCs_used = components_number
@@ -1579,7 +1597,8 @@ def main():
 	print "Clustering using the first %i principal components..." % principal_components_number
 	reduced_score_matrix = score_matrix[:,:principal_components_number]
 	
-	mat, tmp, tmp1 = matrix_whiten(reduced_score_matrix, std=True)
+	mat, tmp, tmp1 = matrix_whiten(reduced_score_matrix, std=False)   ####%%% Changed to False by MC
+
 	labels = gaussian_mixture(mat, upper_bound=max_clusters)
 	
 	cluster_number = len( np.unique(labels) )
@@ -1677,3 +1696,4 @@ if __name__ == "__main__":
 	main()
 	endtime = float(time.time()-start)
 	print "Total Execution: {0:.1f} s".format(endtime if endtime > 0 else endtime/60.0 )
+

@@ -4,7 +4,7 @@
 Created by Daniele Trifirò on 2013-07-29.
 brethil@phy.olemiss.edu
 
-data_conditioning.py contains definitions and functions to condition data.
+`pcat.condition` contains definitions and functions to condition data.
 Can be used standalone. For usage: run with -h.
 
 Functions (and variables) defined here are imported into PCAT.py and used
@@ -40,7 +40,7 @@ Contains:
 """
 
 from scipy import signal, interpolate
-from utilities_PCAT import *
+from pcat.utils import *
 
 
 #################### PARAMETER DEFINITIONS ####################
