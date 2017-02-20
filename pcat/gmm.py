@@ -4,7 +4,7 @@
 # brethil@phy.olemiss.edu
 '''
 This program is used to perform PCA and cluster in the principal component
-space data from finder.py
+space data from `pcat.finder`
 
 It's important to note that, even if this is written to use GMM, with a few
 changes, every clustering algorithm (currently 'gaussian_mixture()')
@@ -39,13 +39,16 @@ SMALL_COMPONENTS = 50
 
 import warnings
 
-from utilities_PCAT import *
-from PCA import standardize, eigensystem, PCA, load_data, matrix_whiten
+from .utils import *
+from .pca import standardize, eigensystem, PCA, load_data, matrix_whiten
 import matplotlib.mlab
 from matplotlib.image import NonUniformImage
 
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore",category=DeprecationWarning)
+    import sklearn.mixture as mix
 
-import sklearn.mixture as mix
+#import sklearn.mixture as mix
 
 # mplot3d is used for the 3D plots.
 #from mpl_toolkits.mplot3d import axes3d
@@ -1594,7 +1597,8 @@ def main():
 	print "Clustering using the first %i principal components..." % principal_components_number
 	reduced_score_matrix = score_matrix[:,:principal_components_number]
 	
-	mat, tmp, tmp1 = matrix_whiten(reduced_score_matrix, std=True)
+	mat, tmp, tmp1 = matrix_whiten(reduced_score_matrix, std=False)   ####%%% Changed to False by MC
+
 	labels = gaussian_mixture(mat, upper_bound=max_clusters)
 	
 	cluster_number = len( np.unique(labels) )
@@ -1692,3 +1696,4 @@ if __name__ == "__main__":
 	main()
 	endtime = float(time.time()-start)
 	print "Total Execution: {0:.1f} s".format(endtime if endtime > 0 else endtime/60.0 )
+

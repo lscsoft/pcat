@@ -17,9 +17,9 @@ Can be used standalone. For usage: run with -h.
 
 from numpy import linalg
 
-from utilities_PCAT import *
+from pcat.utils import *
 
-from data_conditioning import median_mean_average_psd
+from pcat.condition import median_mean_average_psd
 
 def usage():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
@@ -28,7 +28,7 @@ def usage():
 		[-o FILE, --output file] file1 file2 file3 ..."
 	
 	print "\n\tTakes data in pickled or plain text files (file1, file2, ...).\n\
-	Returns a pickled (or plain text) list of Spike() class objects (see spike_class.py)\n\
+	Returns a pickled (or plain text) list of Spike() class objects (see `pcat.spike`)\n\
 	containing transients and their properties, e.g., GPS peak time, peak absolute value."
 	
 	print "\n\tOptions:"
