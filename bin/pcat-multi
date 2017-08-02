@@ -51,6 +51,7 @@ def parse_commandline():
     parser.add_option("-f", "--frequency", help="Frequency Domain configuration file, optional, defaults to " + default_frequency_config, default=None)
     parser.add_option("-n", "--name", help="Name for output file (if using -s and -e)", default=None)
     parser.add_option("--IFO", help="Interferometer to use, 'H' for Hanford, 'L' for Livingston.", default=None)
+    parser.add_option("--omicron", action="store_true", help="Use omicron triggers", default=False)
     opts, args = parser.parse_args()
 
     return opts
@@ -128,7 +129,7 @@ def read_config_frequency(file_name):
     return configuration
     
 
-def run_PCAT_time(list_name, configuration, start_time, end_time):
+def run_PCAT_time(list_name, configuration, start_time, end_time, OMICRON=False):
     global opts, channel_processing_errors
     (channel_names, IFOs, frame_types, thresholds, variables_number, highpass_cutoff, whitening, downsample_freq, segment_size, components_number, max_clusters) = configuration
     args = []
@@ -144,12 +145,16 @@ def run_PCAT_time(list_name, configuration, start_time, end_time):
 #        else:
 #            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
 #        args.append(arg.split())
-     whiten = '--whiten' if (whitening[index] == "YES") else ''
-     if opts.start and opts.end:
-            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time)
-     else:
-            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index])
-     args.append(arg.split())
+        whiten = '--whiten' if (whitening[index] == "YES") else ''
+        if OMICRON:
+           omicron_flag="--omicron"
+        else:
+           omicron_flag=""
+        if opts.start and opts.end:
+            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct --glitchgram_start {12} --glitchgram_end {13} {14}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], start_time, end_time, omicron_flag)
+        else:
+            arg = "pcat --silent --time {0} --channel {1} --IFO {2} --frame {3} --list {4} --size {5} --highpasscutoff {6} -t {7} -v {8} --components {9} -m {10} --resample {11} --reconstruct {12}".format(whiten, channel_names[index], IFOs[index], frame_types[index], list_name, segment_size[index], highpass_cutoff[index], thresholds[index], variables_number[index], components_number[index], max_clusters[index], downsample_freq[index], omicron_flag)
+        args.append(arg.split())
 
 
     errors = 0
@@ -545,7 +550,10 @@ def main():
     locked_times_plot(times_list, output_dir + "/img/", start_time, end_time)
 	
     # Run time domain analysis
-    time_results = run_PCAT_time(times_list, configuration_time, start_time, end_time)
+    if opts.omicron:
+        time_results = run_PCAT_time(times_list, configuration_time, start_time, end_time, OMICRON=True)
+    else:
+        time_results = run_PCAT_time(times_list, configuration_time, start_time, end_time, OMICRON=False)
     
     # Also do frequency domain if requested, then print results
     if (opts.frequency):

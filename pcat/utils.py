@@ -191,9 +191,9 @@ def get_server_url():
 	"""
 	hostname = getstatusoutput( "echo $(hostname)| sed \"s/-[^.]*/-jobs/\"" )[1]
 	if ( ".edu" ) in hostname:
-		server = "http://"+hostname+"/"
+		server = "https://"+hostname+"/"
 	else:
-		server = "http://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
+		server = "https://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
 	return server
 
 
@@ -295,7 +295,7 @@ def load_time_series(file_name, pickled=False):
 	return time_series
 
 
-def create_data_matrix(data_list, ANALYSIS, model_waveform=None):
+def create_data_matrix(data_list, ANALYSIS, model_waveform=None, extra_features=False):
 	''' 
 		Takes as input a list of Spike instances and type of analysis being performed:
 		'time', 'frequency', 'time_diff', 'frequency_diff'
@@ -311,7 +311,21 @@ def create_data_matrix(data_list, ANALYSIS, model_waveform=None):
 	waveforms = []
 	for observation in data_list:
 			if ( ANALYSIS == 'time' ):
-				waveforms.append( (observation.waveform)/(observation.norm) )
+				if extra_features:
+					frequencies = observation.fft_freq
+					psd = observation.psd
+					maximum_amplitude_frequency = frequencies[np.argmax(psd)]
+					central_freq = (np.sum(psd*frequencies))/psd.sum()
+					energy = psd.sum()
+					w = observation.waveform
+					std = np.std(w)
+					duration = len(w[w>std]) # UGLY, to be removed
+					extra_features = [maximum_amplitude_frequency, central_freq, energy, duration, observation.polarization]
+					global EXTRA_FEATURES_N
+					EXTRA_FEATURES_N = len(extra_features)
+					data = np.concatenate((extra_features, w/observation.norm))
+				else:
+					waveforms.append( (observation.waveform)/(observation.norm) )
 			elif ( ANALYSIS == 'time_diff' ):
 				waveforms.append( np.abs( model_waveform-( (observation.waveform)/(observation.norm) ) ) )
 			elif ( ANALYSIS == 'frequency' ):
@@ -441,7 +455,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 		(PSD, freqs) =  spike.psd, spike.fft_freq
 	
 		central_freq = (np.sum(PSD*freqs))/PSD.sum()
-		# Peak frequency is the frequency at which the PSD has a maximum (bad choice for parameter name)
 		peak_frequency = freqs[np.argmax(PSD)]
 		spike.peak_frequency = peak_frequency
 		spike.central_freq = central_freq
@@ -452,7 +465,9 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	cluster_number = len(np.unique(labels))
 	
 	loudest_event_index = np.argmax(SNRs)
-	ax.set_title("Glitchgram - Loudest at GPS {0}, SNR={1:.1g}, Peak Frequency={2:.1f}Hz, Type={3}".format(data[loudest_event_index].peak_GPS, np.max(SNRs), peak_frequencies[loudest_event_index], labels[loudest_event_index]+1))
+	loudest_type = labels[loudest_event_index]
+	loudest_type_string = "Type {0}".format(loudest_type) if (loudest_type != 0) else "Noise"
+	ax.set_title("Glitchgram - Loudest at GPS {0}, SNR={1:.1g}, Peak Frequency={2:.1f}Hz, {3}".format(data[loudest_event_index].peak_GPS, np.max(SNRs), peak_frequencies[loudest_event_index], loudest_type_string))
 	
 	# Define ticks and define ax (glitchgram with color according to SNR)
 	x_ticks = [start_time]
@@ -492,7 +507,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 			interval, ymin=0.0, ymax=10.0*np.max(SNRs), where=np.array(SNRs)>0, facecolor='#FFFFFF', alpha=1))
 		"""
 		
-		
 		ax.add_collection(locked_times_plots[-1])
 		ax2.add_collection(locked_times_plots2[-1])
 		#ax3.add_collection(locked_times_plots3[-1])
@@ -503,14 +517,21 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	plot_labels_SNR = []
 	try:
 		for i in range(cluster_number):
-			mask = np.where(labels == i, True, False)
+			mask = np.array(labels) == i
 			time_axis_tmp = np.array(time_axis)[mask]
 			y_axis_tmp = np.array(SNRs)[mask]
-			ax3.plot(time_axis_tmp, y_axis_tmp, markers_and_colors[i], label=str(i+1), markersize=5)
-			plot_labels_SNR.append(str(i+1))
+			
+			if i == 0:
+				ax3.plot(time_axis_tmp, y_axis_tmp, markers_and_colors[i], label="Noise", markersize=5)
+				plot_labels_SNR.append("Noise")
+			else:
+				ax3.plot(time_axis_tmp, y_axis_tmp, markers_and_colors[i], label=str(i), markersize=5)
+				plot_labels_SNR.append(str(i))
+			
 		color_legend = ax3.legend(plot_labels_SNR, bbox_to_anchor=(1.12, 1), numpoints = 1)
-	except:
-		ax3.plot(time_axis, SNRs, "ro", markersize=5)
+	except Exception, msg:
+		print "[Glitchgram] Exception while plotting types in panel 3: {0}".format(str(Exception) + msg)
+		ax3.plot(time_axis, SNRs, "r.", markersize=5)
 	
 	# PLOT STAR FOR LOUDEST EVENT IN PLOT 3
 	ax3.plot(time_axis[loudest_event_index], np.max(SNRs), markers_and_colors[labels[loudest_event_index]][1]+"*", markersize=10)
@@ -568,21 +589,26 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	
 	try:
 		for i in range(cluster_number):
-			mask = np.where(labels == i, True, False)
+			mask = np.array(labels) == i
 			time_axis_tmp = np.array(time_axis)[mask]
 			y_axis_tmp = np.array(peak_frequencies)[mask]
-			ax2.plot(time_axis_tmp, y_axis_tmp, markers_and_colors[i], label=str(i+1))
-			plot_labels.append(str(i+1))
+			if i == 0:
+				ax2.plot(time_axis_tmp, y_axis_tmp, markers_and_colors[i], label="Noise")
+				plot_labels.append("Noise")
+			else:
+				ax2.plot(time_axis_tmp, y_axis_tmp, markers_and_colors[i], label=str(i))
+				plot_labels.append(str(i))
 		box = ax2.get_position()
 		ax2.set_position([box.x0, box.y0, box.width*0.94, box.height])
 		color_legend = ax2.legend(plot_labels, bbox_to_anchor=(1.12, 1), numpoints = 1)
-	except:
-		ax2.plot(time_axis, peak_frequencies, "ro")
+	except Exception, msg:
+		print "[Glitchgram] Exception while plotting types in panel 3: {0}".format(str(Exception) + msg)
+		ax2.plot(time_axis, peak_frequencies, "r.")
 	
 	# PLOT STAR AS LOUDEST EVENT FOR PLOT 2
 	ax2.plot(time_axis[loudest_event_index], peak_frequencies[loudest_event_index], markers_and_colors[labels[loudest_event_index]][1]+"*", markersize=10)
 	
-    #ax2.add_artist(color_legend)
+	#ax2.add_artist(color_legend)
 	
 	ax2.set_xlim((start_time, end_time))
 	ax2.autoscale(False, axis="both")
@@ -606,7 +632,10 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	# create the image map
 	info_list = []
 	for index, element in enumerate(data):
-		info_list.append( ( labels[index]+1, data[index].peak_GPS ) )
+		if labels[index] == 0:
+			info_list.append( ( "", data[index].peak_GPS ) )
+		else:
+			info_list.append( ( labels[index], data[index].peak_GPS ) )
 	
 	###
 	# Create an array with the x and y coordinates of the points
@@ -614,8 +643,6 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	xys1 = zip(time_axis, SNRs)
 	xys2 = zip(time_axis, peak_frequencies)
 	dpi = fig.get_dpi()
-	
-	
 	height = fig.get_figheight() * dpi
 	
 	ixs = [0]*glitch_number
@@ -626,7 +653,7 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	iys2 = [0]*glitch_number
 	
 	# Get coordinates for the points in the image for each plot
-	i = 0
+	i = 0;
 	for x, y in xys:
 		ixs[i], iys[i] = ax.transData.transform_point( [x, y] )
 		i+=1
@@ -649,19 +676,27 @@ def plot_glitchgram(data, times, start_time, end_time, highpass_cutoff, f_sampl,
 	<map name="points">%s</map>
 	</body></html>"""
 	
-	fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
+	fmts = []
+	fmts1 = []
+	fmts2 = []
+	for index, infos in enumerate(info_list):
+		stuff, gps = infos
+		if (stuff == ""): # noise
+			fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/noise%s/%0.3f.pdf' title='GPS %0.2f - Noise%s ' >"
+		else:
+			fmt = "<area shape='circle' coords='%f,%f,3' href='time_series/Type_%i/%0.3f.pdf' title='GPS %0.2f - Type %i ' >"
 		
-	# need to do height - y for the image-map
-	fmts = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords, info_list) ]
-	fmts1 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords1, info_list) ]	
-	fmts2 = [fmt % (ix, height-iy, x, y, y, x) for (ix, iy), (x, y) in zip(icoords2, info_list) ]	
+		fmts.append( fmt % (icoords[index][0],  height-icoords[index][1],  stuff, gps, gps, stuff)) 
+		fmts1.append(fmt % (icoords1[index][0], height-icoords1[index][1], stuff, gps, gps, stuff))
+		fmts2.append(fmt % (icoords2[index][0], height-icoords2[index][1], stuff, gps, gps, stuff))
+		
 	
 	fig.savefig("{0}.png".format(name), dpi=fig.get_dpi()) # bbox_inches='tight', 
 	print "\tSaved: {0}.html".format(name)
 	plt.close('all')
 	
 	f = open("{0}.html".format(name), "w")
-	print >> f, tmpl % ("{0}".format(name), "\n".join(fmts+fmts1+fmts2))
+	print >> f, tmpl % (name, "\n".join(fmts+fmts1+fmts2))
 	f.close()
 	
 

@@ -21,6 +21,14 @@ from pcat.utils import *
 
 from pcat.condition import median_mean_average_psd
 
+# Required to handle omicron triggers
+import trigfind
+from trigfind import find_trigger_files
+from gwpy.timeseries import TimeSeries
+from gwpy.table.lsctables import SnglBurstTable
+
+
+
 def usage():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
 		[--ascii, -a] [-i]\n\
@@ -271,8 +279,8 @@ def print_parameters():
 
 def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolution, data_name, spike_width):
 	'''
-		This function searches for the spikes in the data segments
-		and saves parameters for each found spike in the attributes of the
+		This function searches for the glitches in the time series "data"
+		and saves parameters for each glitch in the attributes of the
 		"Spike" class. Spikes are saved in a list which is what is returned by the
 		function.
 		The data_name variable is used to retrieve the start and end GPS times, assuming
@@ -451,8 +459,7 @@ def find_spikes_algorithm(data, removed_points, f_sampl, threshold, time_resolut
 
 def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed_seconds, f_sampl, normalization=None):
 	'''
-		Load all the files in the 'file_list' list and searches for spikes, using the
-		find_spikes_algorithm.
+		Searches for transients using the find_spikes_algorithm.
 		
 		
 		Arguments:
@@ -505,6 +512,212 @@ def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed
 			
 	return spikes_list
 
+
+
+def get_triggers(data, start_time, end_time, triggers, spike_width, removed_seconds, f_sampl, normalization=None):
+	'''
+		Load all the files in the 'file_list' list and samples glitches,
+		using the triggers in "trigger_file".
+		
+		
+		Arguments:
+			data:
+					time series to analyze (numpy array)
+			start_time:
+					start time in GPS for the "data" waveform 
+			end_time:
+					start time in GPS for the "data" waveform 
+			triggers:
+					list of GPS times of triggers
+			spike_width:
+					Minimum distance between two neighouring spikes to be considered different events
+			removed_seconds:
+					The number of seconds to exclude from the beginning and the end of the segments, in
+					order to avoid fourier transform ringing artifacts.
+			f_sampl:
+					Sampling frequency
+			normalization:
+			 		Sets how the found spikes are normalized.
+					Can be one in "energy", "amplitude" or *None*, default is none.
+		
+					If energy, spikes are normalized to unit energy, if amplitude, spikes are normalized to
+					unit maximum amplitude, if None, spikes are not normalized.
+	'''
+	
+	spikes = []
+	spikes_number = 0
+	
+	
+	# Calculate the standard deviation, excluding the the first and last
+	# 'removed_seconds' seconds, in order to exclude ringing artifacts
+	# due to the fourier transforms.
+	
+	removed_points = int(removed_seconds*f_sampl)
+	
+	
+	to_analyze = data[removed_points:-removed_points]
+		
+	# Return if there are no triggers
+	if len(triggers) == 0:
+		return []
+	
+	# Exclude triggers that lie outside the desired range [start_time+removed_seconds, end_time-removed_seconds]
+	triggers_mask = (triggers >= int(start_time)+removed_seconds) & (triggers < int(end_time)-removed_seconds)
+	triggers = triggers[triggers_mask]
+	
+	# Return empty list if we have no triggers
+	if len(triggers) == 0:
+		return []
+	
+	# Exclude triggers with are closer than spike_width/2 (time clustering)
+	trigger_differences = np.diff(triggers)
+	# Add 'True' at the beginning of the mask, since len(triggers)=n and len(np.diff(triggers))=n-1
+	# (we are keeping the first trigger)
+	triggers_mask = np.concatenate( ([True], trigger_differences>=((spike_width//2)/f_sampl ) ) )
+	
+	triggers = triggers[triggers_mask]
+	
+	# Return empty list if we have no triggers
+	if len(triggers) == 0:
+		return []
+	
+	# Choose NFFT to have a frequency resolution of 1 Hz or better
+	if (spike_width < f_sampl):
+		window = np.hanning(spike_width)
+		window_norm = (window**2).sum()/spike_width
+		freqs, psd = median_mean_average_psd(to_analyze, int(f_sampl), f_sampl)
+	else:
+		window = np.hanning(f_sampl)
+		window_norm = (window**2).sum()/float(f_sampl)
+		freqs, psd = median_mean_average_psd(to_analyze, spike_width, f_sampl)
+	
+	delta_t = 1.0/f_sampl
+	
+	segment_length = len(to_analyze)
+	# Loop over the triggers contained in 'to_analyze' and sample the waveforms.
+	for index, peak_gps in enumerate(triggers):
+		
+		gps_index = int(np.round((peak_gps  - (int(start_time)+removed_seconds)) * f_sampl ))
+		
+		## Save waveform
+		# Check if gps_index lies too close to boundaries. If so, print a warning and fill the missing sample
+		waveform_start = gps_index-(spike_width//2)
+		waveform_end = gps_index+(spike_width//2)
+		
+		if (gps_index+(spike_width//2) >= segment_length):
+			waveform_end = len(to_analyze)
+			waveform = to_analyze[gps_index-(spike_width//2):]
+			missing_samples = spike_width - len(waveform)
+			# Extend waveform (at the beginning) so that it has spike_length samples
+			waveform = np.concatenate((waveform, [0.0]*missing_samples ))
+		elif (gps_index-(spike_width//2) < 0):
+			waveform_start = 0
+			# Extend waveform (at the start) so that it has spike_length samples
+			waveform = to_analyze[:gps_index+(spike_width//2)]
+			missing_samples = spike_width - len(waveform)
+			waveform = np.concatenate(([0.0]*missing_samples, waveform ))
+		else:
+			waveform = to_analyze[gps_index-(spike_width//2):gps_index+(spike_width//2)] 
+		
+		# Find the maximum (absolute) amplitude of the waveform and save the index
+		# relative to 'to_analyze'
+		max_index = np.argmax(np.abs(waveform))
+		max_index += waveform_start
+		
+		# Re-sample the transient using max_gps_index as starting point
+		if (max_index+(spike_width//2) >= segment_length):
+			waveform_end = len(to_analyze)
+			waveform = to_analyze[max_index-(spike_width//2):]
+			missing_samples = spike_width - len(waveform)
+			# Extend waveform (at the beginning) so that it has spike_length samples
+			waveform = np.concatenate((waveform, [0.0]*missing_samples ))
+		elif (max_index-(spike_width//2) < 0):
+			waveform_start = 0
+			# Extend waveform (at the start) so that it has spike_length samples
+			waveform = to_analyze[:max_index+(spike_width//2)]
+			missing_samples = spike_width - len(waveform)
+			waveform = np.concatenate(([0.0]*missing_samples, waveform ))
+		else:
+			waveform = to_analyze[max_index-(spike_width//2):max_index+(spike_width//2)]
+		
+		# Instantiate Spike object
+		max_index = np.argmax(np.abs(waveform))
+		max_value = np.max(np.abs(waveform))
+		spike = Spike(0, 0, max_index, max_value, peak_gps,
+						int(start_time), int(end_time), waveform, f_sampl)
+		
+		# The squared SNR per unit frequency for a signal g(t) is defined as
+		#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
+		# Factor of two beause the numerator should be g(f)*g_conj(f) + g_conj(f)*g(f)
+		# where g(f) is the Fourier transform of g(t) and Pxx is the 
+		# detector spectrum.
+		# Thus the total SNR:
+		#	SNR^2 = 4*\int_0^\infty |g(f)|^2/Pxx(f) df
+		# Since g(f) is symmetric around f  (time series is real)/
+		
+		# Factor of two in psd because rfft is one sided.
+		spike.psd = 2 * 1.0/window_norm * 1.0 *  np.abs(delta_t*np.fft.rfft(spike.waveform*window, n=int(f_sampl)))**2
+		spike.psd[0] /= 2.0
+		spike.fft_freq = freqs
+		
+		spike.segment_psd = psd
+		
+		# We don't need the factor of 4 in front of the integral because both spike.psd and psd
+		# are one-sided and are correctly normalized
+		spike.SNR = np.sqrt( 4* (np.array(spike.waveform)**2).sum() * 2 * f_sampl )
+		
+		# Check spike polarity
+		if (spike.waveform[np.argmax(np.abs(spike.waveform))] > 0):
+			spike.polarity = 1
+		else:
+			spike.waveform *= -1
+			spike.polarity = -1
+		
+		# Save Spike object
+		spikes.append(spike)
+		
+	
+	for spike in spikes:
+		if ( normalization == "energy" ):
+			spike.norm = linalg.norm(spike.waveform)
+		elif ( normalization == "amplitude" ):
+			spike.norm = np.max(np.abs(spike.waveform))
+		elif ( normalization == None ):
+			spike.norm = 1.0
+		else:
+			print "Other normalizations have yet to be implemented" 
+			assert False
+			
+	return spikes
+
+
+
+def get_omicron_triglist(channel, start_time, end_time, freq_min, freq_max, snr_threshold):
+	'''
+	Get GPS times for omicron triggers for channel "channel" between start_time and end_time (GPS times),
+	for frequencies between "freq_min" and "freq_max", which SNR threshold of "snr_threshold".
+	
+	Returns a list of GPS times for the triggers.
+	'''
+	
+	cache = trigfind.find_trigger_files(channel, 'Omicron', start_time, end_time)
+	
+	data = SnglBurstTable.read(cache)
+	GPS_obj = data.get_peak().astype(float)
+	gps_array = []
+	q_array = []
+	
+	SNR = data.get_column('snr')
+	freq = data.get_column('peak_frequency')
+	
+	mask1 = np.logical_and(freq>freq_min, freq<freq_max)
+	mask = np.logical_and( SNR >= snr_threshold, mask1)
+	
+	trig_times = np.asarray(GPS_obj)[mask]
+	
+	snr = SNR[mask]
+	
+	return trig_times
 
 def main():
 	args = check_options_and_args()
