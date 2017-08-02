@@ -117,9 +117,9 @@ from pcat.utils import *
 from pcat.data import retrieve_timeseries
 from pcat.condition import *
 
-from pcat.finder import find_spikes
+from pcat.finder import find_spikes, get_triggers, get_omicron_triglist
 from pcat.pca import PCA, create_data_matrix, eigensystem, matrix_whiten
-from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
+from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test, reconstructed_spike_time_series
 from pcat.gmm import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
 def usage():
@@ -185,7 +185,7 @@ def usage():
 	
 	print '\033[1m' + "Time Domain options:" + '\033[0m'
 	print "   -t threshold, --threshold threshold"
-	print "\tTrigger threshold in units of the standard deviation, e.g. 5.5."
+	print "\tTrigger threshold in units of the standard deviation, e.g. 5.5. SNR threshold if used with --omicron."
 	print "   --energy"
 	print "\tNormalize identified transients to unit L2 norm"
 	print "\tinstead of unit maximum amplitude (default)."
@@ -238,6 +238,8 @@ def usage():
 	
 	print '\033[1m' + "Optional arguments:" + '\033[0m'
 	
+	print "   --omicron\n\tUse omicron triggers. Use with -t SNR_threshold "
+	print "   --triggers trigger_file\n\tGet triggers from the given file (single column with GPS times)."
 	print "   --size segment_size\n\tSize in seconds of the chunks in which data is split."
 	print "\tto be analyzed, must be larger than 1 (smaller is faster)."
 	print "\tDefault is 8 sec for time analysis, 60 sec for frequency analysis."
@@ -269,6 +271,9 @@ def usage():
 	print "\tSpecifies the maximum number"
 	print "\tof clusters. Integer, default is 10."
 	
+	print "   --discard_percentage percentage"
+	print "\tSpecifies the minimum size of a cluster, classes with fewer than this percentage of the total number of glitches than this are discarded and classified as 'noise'. percentage has to be between 0 and 1."
+	
 	print "   -v variables_n, --variables variables_n"
 	print "\tIf performing time-domain analysis, this sets the time resolution"
 	print "\ti.e. the temporal length of the sampled transients.\n"
@@ -297,6 +302,11 @@ def usage():
 	print "\tThe saved files (binary) can be used with python/numpy,"
 	print "\tusing numpy's 'load()'"
 	
+	print "  --extra_features"
+	print "\tUse extra features (central frequency, peak frequency, Energy, duration)"
+	print "\tto compute PCA."
+    
+    
 	print "   --noplot"
 	print "\tDo not plot transients/PSDs (makes run faster)"
 	
@@ -326,7 +336,11 @@ def check_options_and_args(argv):
 	
 	global ANALYSIS, ANALYSIS_FREQUENCY, CLEAN, RECONSTRUCT, NOPLOT, SILENT
 	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
-
+	
+	global EXTRA_FEATURES
+	global OMICRON
+	
+	EXTRA_FEATURES = False
 	LIST = False
 	CUSTOM_OUT = False
 	FILTER = False
@@ -340,16 +354,22 @@ def check_options_and_args(argv):
 	NOPLOT = False
 	CLEAN = False
 	NORESAMPLE = False
+	
 	# Boolean: apply High Pass filter
 
 	HIGH_PASS = True
 	
+	# Use omicron triggers
+	OMICRON = False
 	# Decide if data is resampled to ANALYSIS_FREQUENCY (if not supplied through
 	# --resample, then it's set to 4096.0 after the argument parsing, see below)
 	RESAMPLE = True
 	SILENT = False
 	# Booleans 
 	
+	global TRIGGERLIST
+	global TRIGGERFILE
+	TRIGGERLIST = False
 	
 	global start_time, end_time, times_list, times, total, download_overlap_seconds
 	global glitchgram_start, glitchgram_end
@@ -371,7 +391,7 @@ def check_options_and_args(argv):
 														'filter', 'maxclusters=', 'whiten', 'size=', 'nohighpass', 'resample=',\
 														'highpasscutoff=', 'energy', "save_timeseries", "clean", "noresample",\
 														"reconstruct", 'noplot', 'silent', "glitchgram_start=", "glitchgram_end=",\
-														"variance="])
+														"variance=", "triggers=", "discard_percent=", "omicron"])
 	except getopt.error, msg:
 		print msg
 		sys.exit(1)
@@ -438,6 +458,9 @@ def check_options_and_args(argv):
 			CLEAN = True
 		elif option == "--reconstruct":
 			RECONSTRUCT = True
+		elif option == "--triggers":
+			TRIGGERLIST = True
+			TRIGGERFILE = os.path.abspath(value)
 		elif option == "--noplot":
 			NOPLOT = True
 		elif option == "--silent":
@@ -450,6 +473,17 @@ def check_options_and_args(argv):
 			AUTOCHOOSE_COMPONENTS = True
 			VARIANCE_PERCENTAGE = float(value)
 			components_number = 0
+		elif option in ( "--discard_percent" ):
+			global discard_percent
+			discard_percent = float(value)
+			if (discard_percent >= 1) or (discard_percent < 0):
+				print "Usage: --discard_percent percent, 'percent' has to be between 0 and 1"
+				print "Quitting."
+				sys.exit()
+		elif option in ( "--extra_features" ):
+			EXTRA_FEATURES = True
+		elif option == "--omicron":
+			OMICRON = True
 		else:
 			print "Unknown option."
 			sys.exit()
@@ -476,17 +510,18 @@ def check_options_and_args(argv):
 				print "Variance percentage has to be in the ]0,1] interval."
 				print "Quitting."
 				sys.exit()
-	elif ( any( "-components" in o for o in opts)):
+	elif ( any( "--components" in o for o in opts)):
 		if (components_number > variables):
 			print "The number of principal components used for clustering has to be lower"
 			print "or equal than the number of variables. Quitting."
 			sys.exit()
+	
 	if (components_number == 0) and not AUTOCHOOSE_COMPONENTS:
 		# If the number of supplied components is zero, fall back to 75% 
 		# explained variance.
 		AUTOCHOOSE_COMPONENTS = True
 		VARIANCE_PERCENTAGE = 0.75
-				
+	
 	if not ( any( flag in o for flag in [ "--start", "--end", "--list"] for o in opts )):
 		print "Start and end GPS time or a list of GPS times have to be supplied. Quitting."
 		sys.exit()
@@ -505,6 +540,9 @@ def check_options_and_args(argv):
 		print "IFO ('L', 'H' or 'H1_R') has to be supplied"
 		print "through the --IFO or -I flags. Quitting."
 		sys.exit()
+	
+	if ( all( flag in o for flag in ['--triggers', "-t"] for o in opts ) ):
+		print "Warning: both --triggers and -t (--threshold) options are being used. -t is ignored."
 		
 	if not ( any( flag in o for flag in ['--time', "--frequency"] for o in opts ) ):
 		print "Analysis type (time domain or frequency domain) has to be supplied"
@@ -522,14 +560,24 @@ def check_options_and_args(argv):
 			sys.exit()
 	
 	if ( ANALYSIS == "time") :
-		if not ( any( flag in o for flag in ['-t', '--threshold'] for o in opts ) ):
-			print "Threshold (in units of standard deviation) has to be supplied through the -t"
+		if not ( any( flag in o for flag in ['-t', '--threshold'] for o in opts ) ) and not (any("--triggers" in o for o in opts)):
+			if OMICRON:
+				print "SNR threshold has to be supplied through the -t"
+			else:
+				print "Threshold (in units of standard deviation) has to be supplied through the -t"
 			print "or --threshold option. Quitting."
 			sys.exit()
 		if ( any( "--whiten" in o for o in opts) and any('--filter' in o for o in opts) ):
 			print "Please choose between --whiten and --filter."
 			print "Quitting."
 			sys.exit()
+	
+	# Default fallback value for discard_percent: 5%
+	try:
+		if discard_percent:
+			pass
+	except:
+		discard_percent = 0.05
 	
 	############################################################################
 	# End of data checking
@@ -619,6 +667,7 @@ def check_options_and_args(argv):
 	# Set default value for find_spikes()'s time_resolution
 	time_resolution = int(variables/2)
 	
+	
 
 
 
@@ -629,9 +678,9 @@ def get_server_url():
 	"""
 	hostname = getstatusoutput( "echo $(hostname)| sed \"s/-[^.]*/-jobs/\"" )[1]
 	if ( ".edu" ) in hostname:
-		server = "http://"+hostname+"/"
+		server = "https://"+hostname+"/"
 	else:
-		server = "http://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
+		server = "https://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
 	
 	# The following line is used to give the correct URL when running PCAT 
 	# through condor
@@ -640,11 +689,11 @@ def get_server_url():
 	if ("node") in server:
 		tmp = join(server.split("/")[3:], ".")
 		if ( "cit" in server ):
-			server = "http://ldas-jobs.ligo.caltech.edu/" + tmp
+			server = "https://ldas-jobs.ligo.caltech.edu/" + tmp
 		elif ("ligo-la" in server):
-			server = "http://ldas-jobs.ligo-la.caltech.edu/" + tmp
+			server = "https://ldas-jobs.ligo-la.caltech.edu/" + tmp
 		elif ("ligo-wa" in server):
-			server = "http://ldas-jobs.ligo-wa.caltech.edu/" + tmp
+			server = "https://ldas-jobs.ligo-wa.caltech.edu/" + tmp
 		else:
 			server = "Error parsing url: \t"  + tmp
 	return server
@@ -717,6 +766,10 @@ def print_parameters():
 		else:
 			seconds_per_trigger = float(variables)/sampling
 		print "\t\t (%.3f s per trigger)" % seconds_per_trigger
+		if OMICRON:
+			print "\t\t Threshold: SNR>=\t\t\t{0} (Using Omicron triggers)".format(threshold)
+		else:
+			print "\t\t Threshold:\t\t\t", threshold
 		print "\t\t Threshold:\t\t\t", threshold
 		if RECONSTRUCT and not AUTOCHOOSE_COMPONENTS:
 			print "\t\t Identified transients plots:\tReconstructed using the"
@@ -1146,14 +1199,48 @@ def pipeline(args):
 			
 			# Search the conditioned time series for transients
 			if (WHITEN and RESAMPLE and (sampling > ANALYSIS_FREQUENCY)):
-				found_spikes = find_spikes(conditioned, out_name, threshold, variables,
+				if OMICRON:
+					( gps_start , gps_end ) = (out_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
+					try:
+						trigger_list = get_omicron_triglist(channel, start, end, HIGH_PASS_CUTOFF, ANALYSIS_FREQUENCY/2.0, threshold)
+					except Exception, error:
+						msg = "!!! COULD NOT RETRIEVE OMICRON TRIGGERS FOR INTERVAL {0}-{1}:\t{2}\n".format(start, end, str(error))
+						print msg
+						log = open(log_name, "a")
+						log.write(msg)
+						log.close()
+						trigger_list = []
+			 		 
+					# Sample waveforms for triggers in "trigger_list" 
+					found_spikes = get_triggers(conditioned, gps_start, gps_end, trigger_list, variables,
+						 							f_sampl=ANALYSIS_FREQUENCY,
+													removed_seconds=download_overlap_seconds, normalization=normalization)
+				else:
+					found_spikes = find_spikes(conditioned, out_name, threshold, variables,
 											time_resolution=time_resolution,
 											removed_seconds=download_overlap_seconds, 
 											f_sampl=ANALYSIS_FREQUENCY,
 											normalization=normalization)
-				
 			else:
-				found_spikes = find_spikes(conditioned, out_name, threshold, variables,
+				if OMICRON:
+					( gps_start , gps_end ) = (out_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
+					try:
+						trigger_list = get_omicron_triglist(channel, start, end, HIGH_PASS_CUTOFF, sampling	/2.0, threshold)
+					except Exception, error:
+						msg = "!!! COULD NOT RETRIEVE OMICRON TRIGGERS FOR INTERVAL {0}-{1}:\t{2}\n".format(start, end, str(error))
+						print msg
+						log = open(log_name, "a")
+						log.write(msg)
+						log.close()
+						trigger_list = []
+			 		 
+					# Sample waveforms for triggers in "trigger_list" 
+					found_spikes = get_triggers(conditioned, gps_start, gps_end, trigger_list, variables,
+						 							f_sampl=sampling,
+													removed_seconds=download_overlap_seconds, normalization=normalization)
+													
+				else:
+					found_spikes = find_spikes(conditioned, out_name, threshold, variables,
 											time_resolution=time_resolution,
 											removed_seconds=download_overlap_seconds, 
 											f_sampl=sampling,
@@ -1396,91 +1483,149 @@ def pipeline(args):
 	# create a PSD database for frequency-domain analysis.
 	###########################################################################
 	
-	# Create data_matrix. PCA will be perfomed on this matrix.
-	if ( ANALYSIS == "time" ):
-		# Create data_matrix
-		data_matrix = create_data_matrix(results, ANALYSIS)
-		data_list = results
-	elif ( "frequency" in ANALYSIS ):
-		data_list, data_matrix = create_data_matrix_from_psds(results, ANALYSIS, sampling, low, high)
-	else:
-		assert False, "DIFF ANALYSIS NOT IMPLEMENTED"
-		
-	# Change working directory to 'output_dir'
-	os.chdir( output_dir )
-		
-	print "\tDone!"
-	print "#"*int(0.8*frame_width)
-	
-	
-	############################################################
-	# PCA and GMM											   #
-	############################################################
-	# If resampling time series, set sampling frequency
-	# to ANALYSIS_FREQUENCY (to which time series have been downsampled)
-	if (RESAMPLE and (sampling > ANALYSIS_FREQUENCY) ) and ("time" in ANALYSIS) :
-		sampling = ANALYSIS_FREQUENCY
-	print "\tPerforming PCA and clustering..."
-	observations, samples = data_matrix.shape
-	print "\t%ix%i data matrix: %i observations of %i variables " % ( observations, samples, observations, samples )
-	
-	# Get score matrix and principal components, PCA()
-	# Columns means and standard deviations are stored in means
-	# stds should be a numpy array of ones, unless matrix_whiten(..., std=True)
-	# in PCA()
-	global components_number
-
-	if AUTOCHOOSE_COMPONENTS:
-		score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number, variance=VARIANCE_PERCENTAGE )
-	else:
-		score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number)
-
-	# Save pickled Principal Components 
-	f = open("Principal_components.dat", "wb")
-	pickle.dump(principal_components, f)
-	f.close()
-	print "\tSaved 'Principal_components.dat'"
-	
-	explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
-	
-	# If automatically chosing components update parameters dump to include
-	# number of PCs used when clustering	
-	if AUTOCHOOSE_COMPONENTS:
-		components_number = max(1,np.argmax(np.where(explained_variance<VARIANCE_PERCENTAGE, explained_variance,0)))
-		with open("parameters.txt", "r") as f:
-			text = f.read()
-			text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
-			text = text.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
-			
-		with open("parameters.txt", "w") as f:
-			f.write(text)
-		
-	print "\n\tClustering using the first {0} principal components, accounting for {1:.1%} of the total variance".format(components_number, explained_variance[components_number])
+	discarded_glitches = 0
+	original_glitches = len(results)
+	discarded_list = []
+	RUN = True
+	# PCA/GMM loop. Run and discard glitches that are clustered in a type that contains
+	# less than a certain percentage of the total number of glitches. Re-run PCA/GMM on the new set without these glitches.
+	print "\n\tPerforming PCA and clustering..."
 	print "\t  Maximum clusters: {0}".format(max_clusters)
+	global components_number
+	while RUN:
+		# Create data_matrix. PCA will be perfomed on this matrix.
+		if ( ANALYSIS == "time" ):
+			# Create data_matrix
+			if EXTRA_FEATURES:
+				data_matrix = create_data_matrix(results, ANALYSIS, extra_features=EXTRA_FEATURES)
+			else:
+				data_matrix = create_data_matrix(results, ANALYSIS)
+			data_list = results
+		elif ( "frequency" in ANALYSIS ):
+			data_list, data_matrix = create_data_matrix_from_psds(results, ANALYSIS, sampling, low, high)
+		else:
+			assert False, "DIFF ANALYSIS NOT IMPLEMENTED"
+			
+		# Change working directory to 'output_dir'
+		os.chdir( output_dir )
+			
+		#print "\tDone!"
+		#print "#"*int(0.8*frame_width)
+		
+		############################################################
+		# PCA and GMM											   #
+		############################################################
+		# If resampling time series, set sampling frequency
+		# to ANALYSIS_FREQUENCY (to which time series have been downsampled)
+		if (RESAMPLE and (sampling > ANALYSIS_FREQUENCY) ) and ("time" in ANALYSIS) :
+			sampling = ANALYSIS_FREQUENCY
+ 		observations, samples = data_matrix.shape
+		if EXTRA_FEATURES:
+			print "\t{0}x{1} data matrix: {0} observations of {1} variables (time series = {2}).".format( observations, samples, observations-EXTRA_FEATURES)
+		else:
+			print "\t{0}x{1} data matrix: {0} observations of {1} variables.".format( observations, samples)
+			
+		# Get score matrix and principal components, PCA()
+		# Columns means and standard deviations are stored in means
+		# stds should be a numpy array of ones, unless matrix_whiten(..., std=True)
+		# in PCA()
+		
+		if AUTOCHOOSE_COMPONENTS:
+			score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number, variance=VARIANCE_PERCENTAGE )
+		else:
+			score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number-1)
+		
+		
+		if False:
+			# Save pickled Principal Components 
+			f = open("Principal_components.dat", "wb")
+			pickle.dump(principal_components, f)
+			f.close()
+			print "\tSaved 'Principal_components.dat'"
+		
+		
+		# If automatically chosing components update parameters dump to include
+		# number of PCs used when clustering	
+		explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
+		if AUTOCHOOSE_COMPONENTS:
+			components_number = max(1, np.argmax(np.where(explained_variance < VARIANCE_PERCENTAGE, explained_variance,0)))+1
+			
+		print "\tClustering using the first {0} principal components, accounting for {1:.1%} of the total variance".format(components_number, explained_variance[components_number])
+		
+		# Cluster the score matrix using gaussian_mixture().
+		# Only use the first 'components_number' components, and standardize input 
+		# data (set zero mean and unit variance) using matrix_whiten to improve
+		# clustering.
+		
+		reduced_whitened_scores, tmp_means, tmp_stds = matrix_whiten(score_matrix[:, :components_number], std=True)
+		labels = gaussian_mixture(reduced_whitened_scores, upper_bound=max_clusters, SILENT=SILENT)
+		
+		# Print information about found clusters:
+		cluster_number = len( np.unique(labels) )
+		
+		RUN = False
+		total_mask = np.array([True for i in labels])
+		removed = 0
+		for i in range(cluster_number):
+			mask = np.array(labels) == i
+			current_type_glitches = np.array(results)[mask]
+			
+			type_size = len(current_type_glitches)
+			type_percent = float(type_size)/float(original_glitches)
+			#print "Type {0}: {1} ({2:.1f})".format(i, type_size, type_percent)
+			
+			# One cluster has less than two glitches. Remove the glitches and re-run PCA/GMM
+			if type_percent <= discard_percent:
+				# Save the discarded glitches
+				discarded_list += current_type_glitches.tolist()
+				discarded_glitches += type_size
+				removed += type_size
+				total_mask = total_mask & ~mask
+				RUN = True
+		
+		if RUN:
+			assert removed != 0
+			print "\tRemoved {0} glitch{1}, re-running PCA/GMM.".format(removed, "es" if removed!=1 else "")
+		else:
+			if AUTOCHOOSE_COMPONENTS:
+				with open("parameters.txt", "r") as f:
+					text = f.read()
+					text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
+					text = text.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
+					
+				with open("parameters.txt", "w") as f:
+					f.write(text)
+		
+		# Remove triggers 
+		results = (np.array(results)[total_mask]).tolist()
 	
-	# Cluster the score matrix using gaussian_mixture().
-	# Only use the first 'components_number' components, and standardize input 
-	# data (set zero mean and unit variance) using matrix_whiten to improve
-	# clustering.
+	print "\n\tA total of {0} out of {1} glitches were discarded".format(discarded_glitches, original_glitches)
 
-	reduced_whitened_scores, tmp_means, tmp_stds = matrix_whiten(score_matrix[:, :components_number], std=True)
-	labels = gaussian_mixture(reduced_whitened_scores, upper_bound=max_clusters, SILENT=SILENT)
+	# Add spike type 0 for discarded glitches
+	for index, spike in enumerate(discarded_list):
+		spike.type = 0
+
 	
-	
-	# Print information about found clusters:
-	cluster_number = len( np.unique(labels) )
+	# Colored clusters contains all types but the noise class. "all_clusters" contains everything, and all_clusters[0] is the noise class
 	colored_clusters = color_clusters( score_matrix, labels )
 	
+	clusters = [ list() for i in range(0, cluster_number)]
+	for index, spike in enumerate(results):
+		clusters[ labels[index] ].append(spike)
+		
+	all_clusters = [discarded_list] + clusters # all_clusters[0] is the noise class 
+	
+	
 	# Save the type the glitch belongs to in the "type" attribute
-	for index, spike in enumerate(data_list):
-		spike.type = labels[index]
+	for index, spike in enumerate(results):
+		spike.type = labels[index]+1 # Add one because the labels indexing starts from 0, but we reserved type 0 for the noise class
 	
-	print_cluster_info(colored_clusters)	
-	
+	print_cluster_info(all_clusters)
+
 	if ("frequency" in ANALYSIS):
-		correlation_test(data_list, labels, ANALYSIS)
+		correlation_test(clusters, ANALYSIS)
 	elif (ANALYSIS == "time"):
-		matched_filtering_test(data_list, labels, ANALYSIS)
+		matched_filtering_test(clusters, ANALYSIS)
 	elif ( ANALYSIS == "generic"):
 		pass
 	else:
@@ -1552,9 +1697,9 @@ def pipeline(args):
 	# in a certain type in the principal component space, by inverting
 	# the PCA one obtains a representation in the original space.
 	if ("bands" in ANALYSIS):
-		calculate_types(data_list, colored_clusters, score_matrix, principal_components, means, stds, labels, ANALYSIS, sampling, low, high)
+		calculate_types(all_clusters, ANALYSIS, sampling, low, high)
 	else:
-		calculate_types(data_list, colored_clusters, score_matrix, principal_components, means, stds, labels, ANALYSIS, sampling)
+		calculate_types(all_clusters, ANALYSIS, sampling)
 	
 	
 	plotted_components = MAX_ALL_PRINCIPAL_COMPONENTS
@@ -1637,27 +1782,41 @@ def pipeline(args):
 		start_time = times[0][0]
 		end_time = times[-1][1]
 		global glitchgram_start, glitchgram_end
+		# Type labeling in the labels lists starts from 0, add one and make the discarded glitched type 0
+		all_labels = np.array(labels).tolist() 	+ [0]*len(discarded_list)
 		if glitchgram_start and glitchgram_end:
-			plot_glitchgram(data_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, labels)
+			plot_glitchgram(data_list+discarded_list, times, glitchgram_start, glitchgram_end, HIGH_PASS_CUTOFF, sampling, all_labels )
 			for segments in times:
-				plot_glitchgram(data_list, [segments], segments[0], segments[1], HIGH_PASS_CUTOFF, sampling, labels, name="Glitchgram_{0}-{1}".format(segments[0], segments[1]))
+				plot_glitchgram(data_list+discarded_list, [segments], segments[0], segments[1], HIGH_PASS_CUTOFF, sampling, all_labels, name="Glitchgram_{0}-{1}".format(segments[0], segments[1]))
 		else:
-			plot_glitchgram(data_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, labels)
+			plot_glitchgram(data_list+discarded_list, times, start_time, end_time, HIGH_PASS_CUTOFF, sampling, all_labels)
 	
 	# If time-domain analysis, create a folder, with subfolders for each
 	# type, to save the transient's time series
 	if ( "time" in ANALYSIS ) and not NOPLOT:
 		print "\tPlotting time series..."
-		for i in range(cluster_number):
+		for i in range(len(all_clusters)):
+			if i == 0:
+				folder = "time_series/noise"
+			else:
+				folder = "time_series/Type_" + str(i)
 			try:
-				os.makedirs( "time_series/Type_"+str(i+1) )
+				os.makedirs(folder)
 			except:
 				pass
-		spike_time_series(data_list, (score_matrix, principal_components, means, stds), components_number, labels, sampling, RECONSTRUCT, SILENT)
+		if RECONSTRUCT:
+			# Plots for the reconstructed time series
+			reconstructed_spike_time_series(data_list, (score_matrix, principal_components, means, stds), components_number, labels, sampling, RECONSTRUCT, SILENT)
+			# Plots for the unclassified
+			if len(discarded_list) > 0:
+				spike_time_series([discarded_list], sampling, SILENT)
+		else:
+			spike_time_series(all_clusters, sampling, SILENT)
 	elif ( "frequency" in ANALYSIS ) and not NOPLOT:
 		print "\tPlotting PSDs..."
+		print "WARNING: DISCARDED PSDs ARE NOT PLOTTED."
 		# Plot a list of PSDs with the relative times:
-		for i in range(cluster_number):
+		for i in range(len(all_clusters)):
 			try:
 				os.makedirs( "PSDs/Type_"+str(i+1) )
 			except:
@@ -1670,7 +1829,11 @@ def pipeline(args):
 	
 	# Dump the database to a pickle file
 	pickle_dump(data_list, database_name)
-	print "\tSaved {0}".format(database_name)
+	if len(discarded_list) != 0:
+		pickle_dump(discarded_list, "discarded_" + database_name )
+		print "\tSaved {0}, {1}".format(database_name, "discarded_" + database_name)
+	else:
+		print "\tSaved {0}".format(database_name)
 	
 	# Analysis finished. Print output URL	
 	print "#"*int(0.8*frame_width)

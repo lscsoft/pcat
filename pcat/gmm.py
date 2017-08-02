@@ -470,10 +470,11 @@ def configure_subplot_freq(subplot_number, logy=True):
 	return fig, ax
 
 
-def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
+def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None, EXTRA_FEATURES=False, EXTRA_FEATURES_N=None):
 	""" Compute an median observation for each cluster.
 		median is used for outlier rejection.
 	"""
+
 	
 	TIMEDOMAIN = True # If true, waveforms are averaged in the time domain, if false, they are averaged in the frequency domain
 	
@@ -519,9 +520,10 @@ def calculate_types(clusters, ANALYSIS, f_sampl, low=None, high=None):
 	
 	if EXTRA_FEATURES:
 		observations, waveform_len = np.shape(average_observation_matrix)
+		waveform_len -= EXTRA_FEATURES_N
 	else:
 		observations, waveform_len = np.shape(average_observation_matrix)
-		waveform_len -= EXTRA_FEATURES_N
+		
 	
 	# Initialize axes for summary plot
 	if ( "frequency" in ANALYSIS ):
@@ -838,7 +840,7 @@ def create_spectrogram(data, sampling, output, title=""):
 	plt.close('all')
 
 
-def reconstructed_spike_time_series(database, PCA_info, components_number, labels, f_sampl, RECONSTRUCT=False, SILENT=False):
+def reconstructed_spike_time_series(database, PCA_info, components_number, labels, f_sampl, RECONSTRUCT=False, SILENT=False, EXTRA_FEATURES=False):
 	'''
 		Create a time series for each element contained in database.
 		- database is a list of Spike() istances

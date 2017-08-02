@@ -21,6 +21,14 @@ from pcat.utils import *
 
 from pcat.condition import median_mean_average_psd
 
+# Required to handle omicron triggers
+import trigfind
+from trigfind import find_trigger_files
+from gwpy.timeseries import TimeSeries
+from gwpy.table.lsctables import SnglBurstTable
+
+
+
 def usage():
 	print "Usage:\t finder.py -t threshold -w width --sampling sampl_freq\n\
 		[--ascii, -a] [-i]\n\
@@ -506,7 +514,7 @@ def find_spikes(data, metadata, threshold, spike_width, time_resolution, removed
 
 
 
-def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_sampl, normalization=None):
+def get_triggers(data, start_time, end_time, triggers, spike_width, removed_seconds, f_sampl, normalization=None):
 	'''
 		Load all the files in the 'file_list' list and samples glitches,
 		using the triggers in "trigger_file".
@@ -515,10 +523,13 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 		Arguments:
 			data:
 					time series to analyze (numpy array)
-			metadata:
-					contains a string with channel and start-end time for the segment.
-					This is used to save the GPS peak time for the found transients
-			time_resolution:
+			start_time:
+					start time in GPS for the "data" waveform 
+			end_time:
+					start time in GPS for the "data" waveform 
+			triggers:
+					list of GPS times of triggers
+			spike_width:
 					Minimum distance between two neighouring spikes to be considered different events
 			removed_seconds:
 					The number of seconds to exclude from the beginning and the end of the segments, in
@@ -536,6 +547,7 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 	spikes = []
 	spikes_number = 0
 	
+	
 	# Calculate the standard deviation, excluding the the first and last
 	# 'removed_seconds' seconds, in order to exclude ringing artifacts
 	# due to the fourier transforms.
@@ -544,19 +556,13 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 	
 	
 	to_analyze = data[removed_points:-removed_points]
-	
-	
-	( start, end ) = (metadata.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
-	
-	triggers = np.loadtxt(trigger_file)
-	assert len(triggers.shape) == 1, "Trigger list should only contain one column of GPS times"
-	
-	# Exit if there are no triggers
+		
+	# Return if there are no triggers
 	if len(triggers) == 0:
 		return []
 	
-	# Exclude triggers that lie outside the desired range [start+removed_seconds, end-removed_seconds]
-	triggers_mask = (triggers >= int(start)+removed_seconds) & (triggers < int(end)-removed_seconds)
+	# Exclude triggers that lie outside the desired range [start_time+removed_seconds, end_time-removed_seconds]
+	triggers_mask = (triggers >= int(start_time)+removed_seconds) & (triggers < int(end_time)-removed_seconds)
 	triggers = triggers[triggers_mask]
 	
 	# Return empty list if we have no triggers
@@ -591,7 +597,7 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 	# Loop over the triggers contained in 'to_analyze' and sample the waveforms.
 	for index, peak_gps in enumerate(triggers):
 		
-		gps_index = int(np.round((peak_gps  - (int(start)+removed_seconds)) * f_sampl ))
+		gps_index = int(np.round((peak_gps  - (int(start_time)+removed_seconds)) * f_sampl ))
 		
 		## Save waveform
 		# Check if gps_index lies too close to boundaries. If so, print a warning and fill the missing sample
@@ -638,7 +644,7 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 		max_index = np.argmax(np.abs(waveform))
 		max_value = np.max(np.abs(waveform))
 		spike = Spike(0, 0, max_index, max_value, peak_gps,
-						int(start), int(end), waveform, f_sampl)
+						int(start_time), int(end_time), waveform, f_sampl)
 		
 		# The squared SNR per unit frequency for a signal g(t) is defined as
 		#	SNR^2(f) = 2 * |g(f)|^2/Pxx(f)
@@ -684,6 +690,34 @@ def get_triggers(data, trigger_file, metadata, spike_width, removed_seconds, f_s
 			
 	return spikes
 
+
+
+def get_omicron_triglist(channel, start_time, end_time, freq_min, freq_max, snr_threshold):
+	'''
+	Get GPS times for omicron triggers for channel "channel" between start_time and end_time (GPS times),
+	for frequencies between "freq_min" and "freq_max", which SNR threshold of "snr_threshold".
+	
+	Returns a list of GPS times for the triggers.
+	'''
+	
+	cache = trigfind.find_trigger_files(channel, 'Omicron', start_time, end_time)
+	
+	data = SnglBurstTable.read(cache)
+	GPS_obj = data.get_peak().astype(float)
+	gps_array = []
+	q_array = []
+	
+	SNR = data.get_column('snr')
+	freq = data.get_column('peak_frequency')
+	
+	mask1 = np.logical_and(freq>freq_min, freq<freq_max)
+	mask = np.logical_and( SNR >= snr_threshold, mask1)
+	
+	trig_times = np.asarray(GPS_obj)[mask]
+	
+	snr = SNR[mask]
+	
+	return trig_times
 
 def main():
 	args = check_options_and_args()

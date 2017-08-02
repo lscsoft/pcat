@@ -55,7 +55,7 @@ from time import asctime, localtime
 
 # Number of parallel processes to run when conditioning data
 global PARALLEL_PROCESSES
-PARALLEL_PROCESSES = 64
+PARALLEL_PROCESSES = 8
 
 # Maximum number of principal components scores shown in the triangle plot
 # since the number of subplots in the triangle plot is n(n+1)/2, just having
@@ -116,9 +116,9 @@ from pcat.utils import *
 from pcat.data import retrieve_timeseries
 from pcat.condition import *
 
-from pcat.finder import find_spikes, get_triggers
+from pcat.finder import find_spikes, get_triggers, get_omicron_triglist
 from pcat.pca import PCA, create_data_matrix, eigensystem, matrix_whiten
-from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test
+from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test, reconstructed_spike_time_series
 from pcat.gmm import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
 def usage():
@@ -184,7 +184,7 @@ def usage():
 	
 	print '\033[1m' + "Time Domain options:" + '\033[0m'
 	print "   -t threshold, --threshold threshold"
-	print "\tTrigger threshold in units of the standard deviation, e.g. 5.5."
+	print "\tTrigger threshold in units of the standard deviation, e.g. 5.5. SNR threshold if used with --omicron."
 	print "   --energy"
 	print "\tNormalize identified transients to unit L2 norm"
 	print "\tinstead of unit maximum amplitude (default)."
@@ -237,7 +237,8 @@ def usage():
 	
 	print '\033[1m' + "Optional arguments:" + '\033[0m'
 	
-	print "   --triggers trigger_file\n\tGet triggers from the given list."
+	print "   --omicron\n\tUse omicron triggers. Use with -t SNR_threshold "
+	print "   --triggers trigger_file\n\tGet triggers from the given file (single column with GPS times)."
 	print "   --size segment_size\n\tSize in seconds of the chunks in which data is split."
 	print "\tto be analyzed, must be larger than 1 (smaller is faster)."
 	print "\tDefault is 8 sec for time analysis, 60 sec for frequency analysis."
@@ -336,6 +337,7 @@ def check_options_and_args(argv):
 	global AUTOCHOOSE_COMPONENTS, VARIANCE_PERCENTAGE
 	
 	global EXTRA_FEATURES
+	global OMICRON
 	
 	EXTRA_FEATURES = False
 	LIST = False
@@ -351,10 +353,13 @@ def check_options_and_args(argv):
 	NOPLOT = False
 	CLEAN = False
 	NORESAMPLE = False
+	
 	# Boolean: apply High Pass filter
 
 	HIGH_PASS = True
 	
+	# Use omicron triggers
+	OMICRON = False
 	# Decide if data is resampled to ANALYSIS_FREQUENCY (if not supplied through
 	# --resample, then it's set to 4096.0 after the argument parsing, see below)
 	RESAMPLE = True
@@ -385,7 +390,7 @@ def check_options_and_args(argv):
 														'filter', 'maxclusters=', 'whiten', 'size=', 'nohighpass', 'resample=',\
 														'highpasscutoff=', 'energy', "save_timeseries", "clean", "noresample",\
 														"reconstruct", 'noplot', 'silent', "glitchgram_start=", "glitchgram_end=",\
-														"variance=", "triggers=", "discard_percent="])
+														"variance=", "triggers=", "discard_percent=", "omicron"])
 	except getopt.error, msg:
 		print msg
 		sys.exit(1)
@@ -476,6 +481,8 @@ def check_options_and_args(argv):
 				sys.exit()
 		elif option in ( "--extra_features" ):
 			EXTRA_FEATURES = True
+		elif option == "--omicron":
+			OMICRON = True
 		else:
 			print "Unknown option."
 			sys.exit()
@@ -553,7 +560,10 @@ def check_options_and_args(argv):
 	
 	if ( ANALYSIS == "time") :
 		if not ( any( flag in o for flag in ['-t', '--threshold'] for o in opts ) ) and not (any("--triggers" in o for o in opts)):
-			print "Threshold (in units of standard deviation) has to be supplied through the -t"
+			if OMICRON:
+				print "SNR threshold has to be supplied through the -t"
+			else:
+				print "Threshold (in units of standard deviation) has to be supplied through the -t"
 			print "or --threshold option. Quitting."
 			sys.exit()
 		if ( any( "--whiten" in o for o in opts) and any('--filter' in o for o in opts) ):
@@ -666,9 +676,9 @@ def get_server_url():
 	"""
 	hostname = getstatusoutput( "echo $(hostname)| sed \"s/-[^.]*/-jobs/\"" )[1]
 	if ( ".edu" ) in hostname:
-		server = "http://"+hostname+"/"
+		server = "https://"+hostname+"/"
 	else:
-		server = "http://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
+		server = "https://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
 	
 	# The following line is used to give the correct URL when running PCAT 
 	# through condor
@@ -677,11 +687,11 @@ def get_server_url():
 	if ("node") in server:
 		tmp = join(server.split("/")[3:], ".")
 		if ( "cit" in server ):
-			server = "http://ldas-jobs.ligo.caltech.edu/" + tmp
+			server = "https://ldas-jobs.ligo.caltech.edu/" + tmp
 		elif ("ligo-la" in server):
-			server = "http://ldas-jobs.ligo-la.caltech.edu/" + tmp
+			server = "https://ldas-jobs.ligo-la.caltech.edu/" + tmp
 		elif ("ligo-wa" in server):
-			server = "http://ldas-jobs.ligo-wa.caltech.edu/" + tmp
+			server = "https://ldas-jobs.ligo-wa.caltech.edu/" + tmp
 		else:
 			server = "Error parsing url: \t"  + tmp
 	return server
@@ -756,6 +766,8 @@ def print_parameters():
 		print "\t\t (%.3f s per trigger)" % seconds_per_trigger
 		if TRIGGERLIST:
 			print "\t\t Trigger List:\t\t\t", os.path.abspath(TRIGGERFILE)
+		elif OMICRON:
+			print "\t\t Threshold: SNR>=\t\t\t{0} (Using Omicron triggers)".format(threshold)
 		else:
 			print "\t\t Threshold:\t\t\t", threshold
 		if RECONSTRUCT and not AUTOCHOOSE_COMPONENTS:
@@ -1180,12 +1192,27 @@ def pipeline(args):
 			else:
 				required_sampling = sampling
 			
-			if TRIGGERLIST: # We have a list of triggers, we can just sample them using get_triggers()
-				# Sample waveforms for triggers in "trigger_file" in "conditioned"
-				found_spikes = get_triggers(conditioned, TRIGGERFILE, out_name, variables,
+			if TRIGGERLIST or OMICRON: # We have a list of triggers, we can just sample them from our processed data
+				# Get start and end times for the data segment
+				( gps_start , gps_end ) = (out_name.split("/")[-1]).split('.')[0].split('_')[-1].split('-')
+				if TRIGGERLIST:	
+					trigger_list = np.loadtxt(TRIGGERFILE)
+					assert len(trigger_list.shape) == 1, "Trigger list should only contain one column of GPS times"
+				elif OMICRON:
+					try:
+						trigger_list = get_omicron_triglist(channel, start, end, HIGH_PASS_CUTOFF, required_sampling/2.0, threshold)
+					except Exception, error:
+						msg = "!!! COULD NOT RETRIEVE OMICRON TRIGGERS FOR INTERVAL {0}-{1}:\t{2}\n".format(start, end, str(error))
+						print msg
+						log = open(log_name, "a")
+						log.write(msg)
+						log.close()
+						trigger_list = []
+			 
+				# Sample waveforms for triggers in "trigger_list" 
+				found_spikes = get_triggers(conditioned, gps_start, gps_end, trigger_list, variables,
 					 							f_sampl=required_sampling,
 												removed_seconds=download_overlap_seconds, normalization=normalization)
-				
 			else: # We have to search for glitches using find_spikes()
 				found_spikes = find_spikes(conditioned, out_name, threshold, variables,
 											time_resolution=time_resolution,
@@ -1410,7 +1437,7 @@ def pipeline(args):
 	discarded_list = []
 	RUN = True
 	# PCA/GMM loop. Run and discard glitches that are clustered in a type that contains
-	# less than 3 glitches. Re-run PCA/GMM on the new set without these glitches.
+	# less than a certain percentage of the total number of glitches. Re-run PCA/GMM on the new set without these glitches.
 	print "\n\tPerforming PCA and clustering..."
 	print "\t  Maximum clusters: {0}".format(max_clusters)
 	global components_number

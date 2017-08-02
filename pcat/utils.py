@@ -191,9 +191,9 @@ def get_server_url():
 	"""
 	hostname = getstatusoutput( "echo $(hostname)| sed \"s/-[^.]*/-jobs/\"" )[1]
 	if ( ".edu" ) in hostname:
-		server = "http://"+hostname+"/"
+		server = "https://"+hostname+"/"
 	else:
-		server = "http://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
+		server = "https://"+getstatusoutput("echo $(hostname) | sed \"s/-[^.]*/-jobs/\" | xargs -i echo {}.$(dnsdomainname)")[1]+"/"
 	return server
 
 
