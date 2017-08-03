@@ -116,7 +116,7 @@ from pcat.utils import *
 from pcat.data import retrieve_timeseries
 from pcat.condition import *
 
-from pipeline import pipeline
+from pcat.pipeline import pipeline
 from pcat.finder import find_spikes, get_triggers, get_omicron_triglist
 from pcat.pca import PCA, create_data_matrix, eigensystem, matrix_whiten
 from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test, reconstructed_spike_time_series
