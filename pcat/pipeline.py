@@ -1381,11 +1381,12 @@ def pipeline(args):
 				# Re run to see if there are any other glitches to be removed
 				RUN = True
 				print "\tRemoved {0} glitch{1}, re-running PCA/GMM.".format(removed, "es" if removed!=1 else "")
+				# Remove triggers 
+				results = (np.array(results)[total_mask]).tolist()
 				break
 		if RUN:
 			continue
-		
-		if AUTOCHOOSE_COMPONENTS:
+		elif AUTOCHOOSE_COMPONENTS:
 			with open("parameters.txt", "r") as f:
 				text = f.read()
 				text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
@@ -1393,9 +1394,6 @@ def pipeline(args):
 				
 			with open("parameters.txt", "w") as f:
 				f.write(text)
-		
-		# Remove triggers 
-		results = (np.array(results)[total_mask]).tolist()
 	
 	print "\n\tA total of {0} out of {1} glitches were discarded".format(discarded_glitches, original_glitches)
 
