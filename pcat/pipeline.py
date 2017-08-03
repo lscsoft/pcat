@@ -122,203 +122,6 @@ from pcat.pca import PCA, create_data_matrix, eigensystem, matrix_whiten
 from pcat.gmm import gaussian_mixture, scatterplot, color_clusters, spike_time_series, matched_filtering_test, correlation_test, reconstructed_spike_time_series
 from pcat.gmm import print_cluster_info, calculate_types, plot_psds, configure_subplot_time, configure_subplot_freq
 
-def usage():
-	'''
-		Usage
-	'''
-	"""print "Usage:\n\tpcat (--time || --frequency) (--start start_time --end end_time || --list times_list)\n\
-	 --frame frame_type -I IFO -c channel_name [--size segment_size]  \n\
-	 [--filter] [--low low_frequency --high high_frequency]\n\
-	 [--energy] [--whiten] [--nohighpass] [-v variables_number]\n\
-	 [--padding_seconds padding || --padding_percent padding_perc]\n\
-	 [--save_timeseries] [--reconstruct]"
-	"""
-	print '\033[1m' + "Usage:" + '\033[0m'
-	print "\tpcat --IFO IFO --frame frame -c channel\\"
-	print "--start start_time --end_end_time OR --list list_of_times\\"
-	
-	print "\t" + '\033[1m'+ "Time Domain options:" + '\033[0m'
-	print "\t\t-t threshold [-v variable_n]"
-	
-	print '\033[1m'+ "\tFrequency Domain options:" + '\033[0m'
-	print "\t\t[--size segment_size] [-v variable_n]"
-	
-	print "\nThe given time interval is processed and analyzed.\n"
-	print "In time domain analysis the (whitened) time series is scanned"
-	print "for transients, on which PCA is performed and the resulting"
-	print "Principal Component Scores clustered with GMM."
-	print "In frequency domain analysis PSDs for 'segment_size' seconds"
-	print "of data are computed, PCA is performed and the resulting"
-	print "Principal Component Scores are clustered with GMM.\n"
-	
-	print "#"*80
-	
-	
-	print '\033[1m' + "Necessary Arguments:" + '\033[0m'
-	
-	print "  --time or --frequency"
-	print "\tType of analysis being performed, either in time or frequency."
-	print "\tTime analysis also requires the following arguments"
-	print "\t'-t threshold' and '--whiten' or '--filter' ."
-	print "\tFrequency does not require any extra arguments."
-	
-	print "  -I IFO, --IFO IFO"
-	print "\tSpecify IFO, can be 'H' for Hanford or 'L' for Livingston."
-	
-	print "\t -c channel_name, --channel channel_name"
-	print "\t\tChannel name, e.g.: L1:PSL-ISS_PDA_OUT_DQ."
-	
-	print "  --frame frame_type"
-	print "\tFrame type, 'R' should be fine most times."
-	print "\tWhen in doubt, check before running using ligo_data_find."
-	
-	print "\n" + '\033[1m' + "Interval to Analyze:" + '\033[0m'
-	print " One of the following two:"
-	print "   --start start_time --end end_time"
-	print "\tStart AND end time expressed in GPS time, e.g. 1043107216"
-	
-	print "   --list times_list"
-	print "\tA file containing a list of times to perform the analysis on."
-	print "\tThe list should have two tab-separated columns, with"
-	print "\tstart time on the first column and end time on the second"
-	print "\tcolumn, in GPS time."
-	
-	print '\033[1m' + "Time Domain options:" + '\033[0m'
-	print "   -t threshold, --threshold threshold"
-	print "\tTrigger threshold in units of the standard deviation, e.g. 5.5. SNR threshold if used with --omicron."
-	print "   --energy"
-	print "\tNormalize identified transients to unit L2 norm"
-	print "\tinstead of unit maximum amplitude (default)."
-	
-	
-	print "\n" + '\033[1m' + "Data conditioning (time domain):" + '\033[0m'
-	print "  --whitening whitens the data and applies an high-pass filter,"
-	
-	print "  --filter applies a band-pass filter. See below for more details."
-	print "\n  *WARNING* --whitening downsamples the data to 4096Hz before"
-	print "\tconditioning and analyzing. This means that the -v should be tuned"
-	print "\taccordingly: e.g. choosing 1024 means that the number"
-	print "\tof sampled seconds is 0.25s."
-	print "\n\tThis can be changed through --resample new_frequency (or --noresample)."
-	print "\n\tCondtioned files are saved in binary format, and can be used"
-	print "\twith python/numpy using numpy's 'load()' function."
-	
-	print "   --filter "
-	print "\tWith this option a fourth order butterworth"
-	print "\tband-pass filter is applied."
-	print "\tHigh and low cutoff frequencies have to be supplied"
-	print "\tthrough --high and --low."
-	
-	print "   --high high_frequency, --low low_frequency\t (with --filter)"
-	print "\tHigh and low cutoff frequency for band-pass filter (integers)"
-	print "\t(Butterworth 4th Order)."
-	
-	print "   --whiten"
-	print "\tWhiten and high-pass input data."
-	print "\tWhitening is performed using the inverse PSD method,"
-	print "\tthe PSD is computed using the median-mean-average algorithm."
-	print "\tDefault overlap between neighbouring segments is 50%."
-	
-	print "   --highpasscutoff cutoff_frequency"
-	print "\tCutoff frequency for the high pass filter (with --whiten)."
-	
-	print "   --nohighpass    (with --whiten)"
-	print "\tDo not apply high-pass filter to input data."
-	
-	print "  "+"-"*int(74)
-			
-	print '\033[1m' + "Frequency domain options:" + '\033[0m'
-	print "   --low low_frequency, --high high_frequency"
-	print "\tOnly perform PCA on the frequency interval from "
-	print "\tlow_frequency to high_frequency (integers) with a resolution"
-	print "\tof 1 Hz."
-	print "\t--low and --high, replace -v. The number of variables used"
-	print "\tis given by high_frequency-low_frequency, use small value"
-	print "\tfor the PCA algorithm to run faster."
-	
-	print '\033[1m' + "Optional arguments:" + '\033[0m'
-	
-	print "   --omicron\n\tUse omicron triggers. Use with -t SNR_threshold "
-	print "   --triggers trigger_file\n\tGet triggers from the given file (single column with GPS times)."
-	print "   --size segment_size\n\tSize in seconds of the chunks in which data is split."
-	print "\tto be analyzed, must be larger than 1 (smaller is faster)."
-	print "\tDefault is 8 sec for time analysis, 60 sec for frequency analysis."
-	
-	print "   --padding_seconds padding"
-	print "\tPad the segment to be analyzed with extra seconds at the start and at the beginning,"
-	print "\tin order to avoid filter artifacts."
-	print "\tDefault 50% overlap in time domain analysis (e.g. 4 seconds overlap with"
-	print "\t8 seconds long segments) and 0% overlap in frequency domain analysis."
-		
-	print "   --padding_percentage padding"
-	print "\tSame as above, though expressed in percentage of segment_size"
-
-	print "   --components components_number"
-	print "\tNumber of components to be used when clustering in the"
-	print "\tPrincipal Components space, integer, default is 40."
-	print "\tThis also sets the number of principal components used"
-	print "\tto reconstruct the glitches when plotting the time series"
-	print "\tin the time-domain analysis when --reconstruct is used."
-	print "\tThis might have to be tweaked for optimal results."
-	print "\t --variance explained_variance"
-	print "\tSimilar to the above, fixes the percentage of variance to include"
-	print "\tin the analysis, hence fixing the number of principal components used."
-	print "\tthis has to be a float between 0 and 1 (100%)."
-	print "\tWhen --components is set to 0, explained variance is set to the default"
-	print "\tvalue of 75%."
-	
-	print "   -m number, --maxclusters number"
-	print "\tSpecifies the maximum number"
-	print "\tof clusters. Integer, default is 10."
-	
-	print "   --discard_percentage percentage"
-	print "\tSpecifies the minimum size of a cluster, classes with fewer than this percentage of the total number of glitches than this are discarded and classified as 'noise'. percentage has to be between 0 and 1."
-	
-	print "   -v variables_n, --variables variables_n"
-	print "\tIf performing time-domain analysis, this sets the time resolution"
-	print "\ti.e. the temporal length of the sampled transients.\n"
-	print "\tThe length of the sampled transients in seconds is"
-	print "\t\tvariables_n/sampling_frequency"
-	print "\twith sampling_frequency being 4096 Hz if --whiten"
-	print "\tor the input value if --resample.\n"
-	
-	print "\tIf in frequency-domain, this sets frequency resolution of "
-	print "\tthe computed spectrum: resolution equals to"
-	print "\t\tnyquist_frequency/variables_n. "
-	print "\t(where the Nyquist frequency is half of the sampling frequency."
-	print "\tWhen performing frequency-domain analysis, for faster computation,"
-	print "\tvariables_n should be a power of two."
-	print "\tDefault values are 512 for time-domain and 2048 for frequency-domain."
-	print "\tThe higher this value, the slower the PCA decomposition."
-	
-	print "   --reconstruct"
-	print "\tIf set, then glitches' time series are reconstructed using components_number "
-	print "\tprincipal components (set with --components or --variance)."
-	print "\tOnly using the first few principal components will reduce noise in the time series"
-	print "\tand make the 'true' shape of the glitch more clear."
-	
-	print "   --save_timeseries"
-	print "\tSave raw time series of the interval being analyzed."
-	print "\tThe saved files (binary) can be used with python/numpy,"
-	print "\tusing numpy's 'load()'"
-	
-	print "  --extra_features"
-	print "\tUse extra features (central frequency, peak frequency, Energy, duration)"
-	print "\tto compute PCA."
-    
-    
-	print "   --noplot"
-	print "\tDo not plot transients/PSDs (makes run faster)"
-	
-	print "   --silent"
-	print "\tDo not display progress bars"
-	
-	print "  "+"-"*int(74) + "\n"
-
-
-
-
-
 ################################################################################
 
 ##############################
@@ -1574,13 +1377,14 @@ def pipeline(args):
 			type_percent = float(type_size)/float(original_glitches)
 			#print "Type {0}: {1} ({2:.1f})".format(i, type_size, type_percent)
 			
-			# One cluster has less than two glitches. Remove the glitches and re-run PCA/GMM
+			# One cluster has less than discard_percent glitches. Remove the glitches and re-run PCA/GMM
 			if type_percent <= discard_percent:
 				# Save the discarded glitches
 				discarded_list += current_type_glitches.tolist()
 				discarded_glitches += type_size
 				removed += type_size
 				total_mask = total_mask & ~mask
+				# Re run to see if there are any other glitches to be removed
 				RUN = True
 		
 		if RUN:
@@ -1601,24 +1405,26 @@ def pipeline(args):
 	
 	print "\n\tA total of {0} out of {1} glitches were discarded".format(discarded_glitches, original_glitches)
 
-	# Add spike type 0 for discarded glitches
+	# Set spike type 0 for discarded glitches
 	for index, spike in enumerate(discarded_list):
 		spike.type = 0
-
 	
-	# Colored clusters contains all types but the noise class. "all_clusters" contains everything, and all_clusters[0] is the noise class
+	# Fix the labels: 0 is reserved for the noise class, so increase everything by 1
+	for label in labels:
+		label += 1 
+	
+	# Colored clusters contains all types but the noise class
 	colored_clusters = color_clusters( score_matrix, labels )
 	
 	clusters = [ list() for i in range(0, cluster_number)]
 	for index, spike in enumerate(results):
-		clusters[ labels[index] ].append(spike)
+		clusters[ labels[index]-1 ].append(spike)
 		
-	all_clusters = [discarded_list] + clusters # all_clusters[0] is the noise class 
+	all_clusters = [discarded_list] + clusters # Using this definition so that all_clusters[0] is the noise class
 	
-	
-	# Save the type the glitch belongs to in the "type" attribute
+	# Set spike.type to the class number
 	for index, spike in enumerate(results):
-		spike.type = labels[index]+1 # Add one because the labels indexing starts from 0, but we reserved type 0 for the noise class
+		spike.type = labels[index] 
 	
 	print_cluster_info(all_clusters)
 

@@ -316,7 +316,7 @@ def color_clusters(score_matrix, labels):
 	
 	colored_list = [ list() for i in range(0, cluster_number)]
 	for index, spike in enumerate(score_matrix):
-		colored_list[ labels[index] ].append(spike)
+		colored_list[ labels[index]-1 ].append(spike)
 	return colored_list
 
 
@@ -1157,10 +1157,10 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 		xs.append( element[x-1] )
 		ys.append( element[y-1] )
 		if ( ANALYSIS == "time"):
-			info_list.append( ( labels[index]+1, spike_database[index].peak_GPS ) )
+			info_list.append( ( labels[index], spike_database[index].peak_GPS ) )
 		elif ( "frequency" in ANALYSIS):
 			info = "%s-%s" % (spike_database[index].segment_start, spike_database[index].segment_end )
-			info_list.append( ( labels[index]+1, info) )
+			info_list.append( ( labels[index], info) )
 		elif ( "generic" in ANALYSIS ):
 			pass
 		else:
@@ -1169,8 +1169,8 @@ def scatterplot(score_matrix, spike_database, colored_clusters_list, labels, x, 
 	
 	for index, element in enumerate(colored_clusters_list):
 		tmp = np.array(element)
-		ax.plot( tmp[:,x-1] , tmp[:,y-1], markers_and_colors[index], label = str(index+1), markersize = 5 )
-		plotlabels.append( str(index+1) )
+		ax.plot( tmp[:,x-1] , tmp[:,y-1], markers_and_colors[index], label = str(labels[index]), markersize = 5 )
+		plotlabels.append( str(labels[index]) )
 	
 	# Create a legend
 	ax.legend(plotlabels, bbox_to_anchor=(0, 0, 1.12, 1), loc = 'best', markerscale = 2, numpoints = 1)
