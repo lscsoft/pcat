@@ -24,7 +24,7 @@ import shutil
 import subprocess
 
 import numpy as np
-import pipeline as pipeline
+from pcat.pipeline import pipeline
 import utils
 
 from string import join
@@ -163,7 +163,7 @@ def run_PCAT_time(list_name, configuration, start_time, end_time, OMICRON=False)
     for index, configuration in enumerate(args):
         #print "Processing {0}...".format(channel_names[index])
         try:
-            URL = pipe.pipeline(configuration)
+            URL = pipeline.pipeline(configuration)
         except:
             import traceback
             error = traceback.format_exc()
@@ -196,7 +196,7 @@ def run_PCAT_frequency(list_name, configuration):
     for index, configuration in enumerate(args):
         print "Processing {0}...".format(channel_names[index])
         try:
-            URL = pipe.pipeline(configuration)
+            URL = pipeline.pipeline(configuration)
         except:
             import traceback
             error = traceback.format_exc()
