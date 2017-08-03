@@ -1294,7 +1294,7 @@ def pipeline(args):
 	print "\n\tPerforming PCA and clustering..."
 	print "\t  Maximum clusters: {0}".format(max_clusters)
 	global components_number
-	while RUN:
+	while RUN and (len(results) > 0 ):
 		# Create data_matrix. PCA will be perfomed on this matrix.
 		if ( ANALYSIS == "time" ):
 			# Create data_matrix
