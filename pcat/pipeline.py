@@ -570,10 +570,9 @@ def print_parameters():
 			seconds_per_trigger = float(variables)/sampling
 		print "\t\t (%.3f s per trigger)" % seconds_per_trigger
 		if OMICRON:
-			print "\t\t Threshold: SNR>=\t\t\t{0} (Using Omicron triggers)".format(threshold)
+			print "\t\t Threshold:\t\t\tSNR>={0} (Using Omicron triggers)".format(threshold)
 		else:
 			print "\t\t Threshold:\t\t\t", threshold
-		print "\t\t Threshold:\t\t\t", threshold
 		if RECONSTRUCT and not AUTOCHOOSE_COMPONENTS:
 			print "\t\t Identified transients plots:\tReconstructed using the"
 			print "\t\t\t\t\t\tfirst {0} principal components".format(components_number)
@@ -793,7 +792,7 @@ def pipeline(args):
 	# Print parameters parsed by check_options_and_args()
 	print_parameters()
 	
-	print "Saved URL:\n  {0}\n".format(results_URL + "parameters.txt")
+	print "Results URL:\n  {0}\n".format(results_URL)
 	
 	# Open new file to save the parameters for the run in 
 	f = open(output_dir + "parameters.txt", "w")

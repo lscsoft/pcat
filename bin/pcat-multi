@@ -24,7 +24,7 @@ import shutil
 import subprocess
 
 import numpy as np
-import pipeline as pipe
+import pipeline as pipeline
 import utils
 
 from string import join
