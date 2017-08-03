@@ -1310,10 +1310,7 @@ def pipeline(args):
 			
 		# Change working directory to 'output_dir'
 		os.chdir( output_dir )
-			
-		#print "\tDone!"
-		#print "#"*int(0.8*frame_width)
-		
+	
 		############################################################
 		# PCA and GMM											   #
 		############################################################
@@ -1337,7 +1334,6 @@ def pipeline(args):
 		else:
 			score_matrix, principal_components, means, stds, eigenvalues = PCA(data_matrix, components_number=components_number-1)
 		
-		
 		if False:
 			# Save pickled Principal Components 
 			f = open("Principal_components.dat", "wb")
@@ -1345,14 +1341,13 @@ def pipeline(args):
 			f.close()
 			print "\tSaved 'Principal_components.dat'"
 		
-		
 		# If automatically chosing components update parameters dump to include
 		# number of PCs used when clustering	
 		explained_variance = np.cumsum(np.abs(eigenvalues))/np.sum(np.abs(eigenvalues))
 		if AUTOCHOOSE_COMPONENTS:
 			components_number = max(1, np.argmax(np.where(explained_variance < VARIANCE_PERCENTAGE, explained_variance,0)))+1
 			
-		print "\tClustering using the first {0} principal components, accounting for {1:.1%} of the total variance".format(components_number, explained_variance[components_number])
+		print "\tClustering using the first {0} principal components, accounting for {1:.2%} of the total variance".format(components_number, explained_variance[components_number])
 		
 		# Cluster the score matrix using gaussian_mixture().
 		# Only use the first 'components_number' components, and standardize input 
@@ -1385,19 +1380,18 @@ def pipeline(args):
 				total_mask = total_mask & ~mask
 				# Re run to see if there are any other glitches to be removed
 				RUN = True
+				print "\tRemoved {0} glitch{1}, re-running PCA/GMM.".format(removed, "es" if removed!=1 else "")
+				continue
 		
-		if RUN:
-			assert removed != 0
-			print "\tRemoved {0} glitch{1}, re-running PCA/GMM.".format(removed, "es" if removed!=1 else "")
-		else:
-			if AUTOCHOOSE_COMPONENTS:
-				with open("parameters.txt", "r") as f:
-					text = f.read()
-					text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
-					text = text.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
-					
-				with open("parameters.txt", "w") as f:
-					f.write(text)
+		
+		if AUTOCHOOSE_COMPONENTS:
+			with open("parameters.txt", "r") as f:
+				text = f.read()
+				text = text.replace("PCA and GMM:", "PCA and GMM:\n\t\tPrincipal components used:\t{0}".format(components_number))
+				text = text.replace("of the variance", "of the variance ({0} principal components).".format(components_number))
+				
+			with open("parameters.txt", "w") as f:
+				f.write(text)
 		
 		# Remove triggers 
 		results = (np.array(results)[total_mask]).tolist()
