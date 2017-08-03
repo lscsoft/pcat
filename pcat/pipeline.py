@@ -1381,8 +1381,9 @@ def pipeline(args):
 				# Re run to see if there are any other glitches to be removed
 				RUN = True
 				print "\tRemoved {0} glitch{1}, re-running PCA/GMM.".format(removed, "es" if removed!=1 else "")
-				continue
-		
+				break
+		if RUN:
+			continue
 		
 		if AUTOCHOOSE_COMPONENTS:
 			with open("parameters.txt", "r") as f:
