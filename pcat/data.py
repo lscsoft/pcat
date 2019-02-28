@@ -19,7 +19,6 @@ import sys
 
 import getopt
 
-import numpy as np
 import pylal.frutils
 import numpy as np
 
